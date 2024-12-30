@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <optional>
+#include <typeinfo>
 
 
 template <typename T>
@@ -29,24 +31,29 @@ void Array<std::optional<T>>::append(const Array<std::optional<T>>& arr){
     }
     size += arr.size();
 }
-Array<std::optional<T>> Array<std::optional<T>>::map(Func f){
-    Array<std::optional<T>> copy;
-    for(const auto e: this.sequence){
+void Array<std::optional<T>>::map(Func f){
+    
+    for(auto& e: this.sequence){
         if(e.has_value()){
-            copy.append(f(e.value()));
+            e=f(e.value());
         }
     }
-
-    return copy;
 }
-Array<std::optional<T>> Array<std::optional<T>>::filter(Func f) {
-    Array<std::optional<T>> copy;
-    for(const auto e: this.sequence){
-        if(f(e)){
-            copy.append(e);
+void Array<std::optional<T>>::filter(Func f) {
+    for(size_t it= 0; it<sizeof(this.sequence); it++){
+        if(!f(sequence[it])){
+            sequence.erase(sequence.begin()+it);
         }
     }
-    return copy;
+}
+std::vector<size_t> Array<std::optional<T>>::filtered_index(Func f) {
+    vector<size_t> indexes;
+    for( size_t it= 0; it<sizeof(this.sequence); it++){
+        if(f(sequence[it])){
+            indexes.emplace_back(it);
+        }
+    }
+    return indexes;
 }
 
 //will implement aggregate later
@@ -83,4 +90,8 @@ bool Array<std::optional<T>>::is_null(int idx){
     }
     return !sequence[idx].has_value()
 
+}
+
+std::string typedef_() const{
+    return typeid(T).name;
 }
