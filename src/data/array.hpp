@@ -1,3 +1,7 @@
+
+
+#ifndef Array_HPP
+#define Array_HPP
 #include <vector>
 #include <string>
 
@@ -9,10 +13,9 @@ class Array{
     private: 
         std::vector<std::optional<T>> sequence;
         size_t size=0;
-        std::string name;
 
     public:
-        Array(std::string name);
+        Array(std::vector<std::optional<T>> input);
         void append(std::optional<T> data);
         void append(const Array<std::optional<T>>& col);
         void appendNull();
@@ -25,3 +28,5 @@ class Array{
         bool is_null(int idx);
 
 }
+
+#endif

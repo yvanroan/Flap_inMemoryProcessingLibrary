@@ -3,18 +3,16 @@
 
 
 template <typename T>
-template <typename R>
 template <typename Func>
 
-//Array class should represent a single Column of data
-//and should support the following:
-//      Efficient storage of homogenous types.
-//      Operations like filtering & aggregations
-//      Type safety and validation
+Array::Array(const std::vector<std::optional<T>>& input){
 
-Array::Array(string name): name{name} {}
+    for(auto e: input){
+        sequence.emplace_back(e);
+    }
+    size += input.size();
+}
 
-// data[index] = std::nullopt; // Explicitly set null
 void Array<std::optional<T>>::append(std::optional<T> data){
     sequence.emplace_back(data);
     size++;
