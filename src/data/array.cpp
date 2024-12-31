@@ -2,6 +2,7 @@
 #include <vector>
 #include <optional>
 #include <typeinfo>
+#include <array.hpp>
 
 
 template <typename T>
@@ -46,7 +47,7 @@ void Array<std::optional<T>>::filter(Func f) {
         }
     }
 }
-std::vector<size_t> Array<std::optional<T>>::filtered_index(Func f) {
+std::vector<size_t> Array<std::optional<T>>::filteredIndex(Func f) {
     vector<size_t> indexes;
     for( size_t it= 0; it<sizeof(this.sequence); it++){
         if(f(sequence[it])){
@@ -69,14 +70,14 @@ std::optional<T> Array<std::optional<T>>::getByIndex(int idx) const{
     return sequence[idx];
 }
 
-size_t Array<std::optional<T>>::memory_usage() const{
+size_t Array<std::optional<T>>::memoryUsage() const{
     if(size == 0){
         return 0;
     }
     return size * sizeof(sequence[0])
 } 
 
-void Array<std::optional<T>>::fill_nulls( T val){
+void Array<std::optional<T>>::fillNulls( T val){
     for(size_t i=0; i<n; i++){
         if(!sequence[i].has_value()){
             sequence[i] = val;
@@ -84,7 +85,7 @@ void Array<std::optional<T>>::fill_nulls( T val){
     }
 }
 
-bool Array<std::optional<T>>::is_null(int idx){
+bool Array<std::optional<T>>::isNull(int idx){
     if (idx >= sequence.size()) {
         throw std::out_of_range("Index out of range");
     }

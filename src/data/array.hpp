@@ -24,11 +24,12 @@ class Array{
         void filter(Func f);
         // std::optional<T> aggregate(Func f);
         std::optional<T> getByIndex(int idx) const;
-        size_t memory_usage() const;
-        void fill_nulls(T val);
-        bool is_null(int idx) const;
+        size_t memoryUSsage() const;
+        void fillNulls(T val);
+        bool isNull(int idx) const;
         std::string typedef_() const; 
-        std::vector<size_t> filtered_index(Func f);
+        std::vector<size_t> filteredIndex(Func f);
+        
 }
 
 #endif
