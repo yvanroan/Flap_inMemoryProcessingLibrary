@@ -1,14 +1,12 @@
 
 #include <vector>
 #include <string>
-#include <array.hpp>
-#include <table.hpp>
+#include "array.hpp"
+#include "table.hpp"
 #include <optional>
 #include <unordered_map>
 
 template <typename T>
-template <typename Func>
-
 
 Table(std::unordered_map<std::string, Array<std::optional<T>>> input): table{input} {}
 void appendCol(std::string name, Array<std::optional<T>> input){
@@ -27,13 +25,7 @@ void appendRow(std::vector<std::optional<T>> entry){
     }
 
 }
-void remove(std::string name){
-    if (table.find(name) == table.end() ) {
-        throw std::invalid_argument("Column name doesn't exist in the table");
-    }
 
-    table.erase(name);
-}
 void rename(std::string oldName, std::string newName){
 
     oldPresent, newPresent = false, false
@@ -163,7 +155,6 @@ void map(Func f, std::string name){
     table[name].map(f);
 }
 
-// Table aggregation(Func f, std::vector<std::string> names){}
 size_t memoryUsage() const{
     int sum = 0;
     for(auto x: table){
@@ -172,36 +163,42 @@ size_t memoryUsage() const{
 
     return sum;
 }
-Table innerJoin(Table left, Table right, std::vector<std::string> columns){
-    Table result;
-    std::unordered_map<std::string, size_t> rightIndexMap;
+
+std::unordered_map<std::string, std::pair<size_t, size_t>> _createHashmapFromTable(Table t){
+    std::unordered_map<std::string, std::pair<size_t, size_t>> map;
 
     // Create a hash map for the right table
-    for (size_t i = 0; i < right.table.at(columns[0]).size(); ++i) {
+    for(size_t i = 0; i < t.table.at(columns[0]).size(); ++i){
         std::string key = "";
-        for (const auto& col : columns) {
-            key += right.table.at(col)[i].value_or("");
+        for(const auto& col : columns){
+            key += t.table.at(col)[i].value_or("")+ "|";
         }
-        rightIndexMap[key] = i;
+        map[key] = make_pair(i,0);
     }
 
+    return map;
+}
+Table innerJoin( Table right, std::vector<std::string> columns) const{
+    Table result;
+    std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap = _createHashmapFromTable(right);
     // Perform the join
-    for (size_t i = 0; i < left.table.at(columns[0]).size(); ++i) {
+    for(size_t i = 0; i < this.table.at(columns[0]).size(); ++i){
         std::string key = "";
-        for (const auto& col : columns) {
-            key += left.table.at(col)[i].value_or("");
+        for(const auto& col : columns){
+            key += this.table.at(col)[i].value_or("")+ "|";
         }
 
-        if (rightIndexMap.find(key) != rightIndexMap.end()) {
-            size_t rightIndex = rightIndexMap[key];
+        if(rightIndexMap.find(key) != rightIndexMap.end()){
+            size_t rightIndex = rightIndexMap[key].first;
+            rightIndexMap[key].second++;
 
-            for (const auto& [col, values] : left.table) {
-                result.table[col].push_back(values[i]);
+            for(const auto& [col, values] : this.table){
+                result.table[col].append(values[i]);
             }
 
-            for (const auto& [col, values] : right.table) {
-                if (result.table.find(col) == result.table.end()) {
-                    result.table[col].push_back(values[rightIndex]);
+            for(const auto& [col, values] : right.table){
+                if(result.table.find(col) == result.table.end()){
+                    result.table[col].append(values[rightIndex]);
                 }
             }
         }
@@ -209,6 +206,89 @@ Table innerJoin(Table left, Table right, std::vector<std::string> columns){
     return result;
     
 }
-Table outerJoin(Table left, Table right, std::vector<std::string> columns){}
-Table leftJoin(Table left, Table right, std::vector<std::string> columns){}
-Table rightJoin(Table left, Table right, std::vector<std::string> columns){}
+Table outerJoin( Table right, std::vector<std::string> columns ) const{
+    
+    std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap = _createHashmapFromTable(right);
+    
+    // Perform the join
+    Table result = leftJoinProcessing( right, columns, rightIndexMap);
+
+    for(const auto& [k,v]: rightIndexMap){
+        if(v.second == 0){
+
+            for(const auto& [col, values] : right.table){
+                result.table[col].append(values[v.first]);
+            }
+
+            //
+            for(const auto& x : this.table){
+                result.table[x.first].append(std::nullopt);
+            }
+        }
+    }
+
+    return result;
+}
+Table leftJoinProcessing(Table right, std::vector<std::string> columns, std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap) const {
+    Table result;
+
+    for(size_t i = 0; i < this.table.at(columns[0]).size(); ++i){
+        std::string key = "";
+        for(const auto& col : columns){
+            key += this.table.at(col)[i].value_or("")+ "|";
+        }
+
+        if(rightIndexMap.find(key) != rightIndexMap.end()){
+            size_t rightIndex = rightIndexMap[key].first;
+            rightIndexMap[key].second++;
+            
+
+            for(const auto& [col, values] : this.table){
+                result.table[col].append(values[i]);
+            }
+
+            for(const auto& [col, values] : right.table){
+                if(result.table.find(col) == result.table.end()){
+                    result.table[col].append(values[rightIndex]);
+                }
+            }
+        }
+        else{
+
+            for(const auto& [col, values] : this.table){
+                result.table[col].append(values[i]);
+            }
+            
+            for(const auto& x : right.table){
+                result.table[x.first].append(std::nullopt);
+            }
+
+        }
+    }
+    return result;
+}
+Table leftJoin( Table right, std::vector<std::string> columns) const{
+    std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap = _createHashmapFromTable(right);
+    
+    // Perform the join
+    return leftJoinProcessing(right, columns, rightIndexMap);
+}
+Table rightJoin( Table right, std::vector<std::string> columns)const{
+
+    return leftJoin(right, columns);
+}
+
+template <typename Func> T aggregateColumn(const std::string& columnName, Func aggFunc, T initialValue) const{
+    if (table.find(columnName) == table.end()) {
+        throw std::invalid_argument("Column not found");
+    }
+    return table.at(columnName).aggregate(aggFunc, initialValue);
+}
+
+template <typename Func> std::unordered_map<std::string, T> aggregateColumns(const std::vector<std::string>& columnNames, Func aggFunc, T initialValue) const {
+    std::unordered_map<std::string, T> results;
+    for (const auto& columnName : columnNames) {
+        results[columnName] = aggregateColumn(columnName, aggFunc, initialValue);
+    }
+    return results;
+}

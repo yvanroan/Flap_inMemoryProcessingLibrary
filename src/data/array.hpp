@@ -6,10 +6,10 @@
 #include <string>
 #include <optional>
 
-template <typename T>
-template <typename Func>
 
-class Array{
+
+
+template <typename T> class Array{
 
     private: 
         std::vector<std::optional<T>> sequence;
@@ -20,15 +20,17 @@ class Array{
         void append(std::optional<T> data);
         void append(const Array<std::optional<T>>& col);
         void appendNull();
-        void map(Func f);
-        void filter(Func f);
+        template <typename Func> void map(Func f);
+        template <typename Func> void filter(Func f);
+        size_t size();
         // std::optional<T> aggregate(Func f);
         std::optional<T> getByIndex(int idx) const;
         size_t memoryUSsage() const;
         void fillNulls(T val);
         bool isNull(int idx) const;
         std::string typedef_() const; 
-        std::vector<size_t> filteredIndex(Func f);
+        template <typename Func> std::vector<size_t> filteredIndex(Func f);
+        template <typename Func> T aggregate(Func aggFunc, T initialValue) const
         
 }
 

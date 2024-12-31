@@ -2,11 +2,11 @@
 #include <vector>
 #include <optional>
 #include <typeinfo>
-#include <array.hpp>
+#include "array.hpp"
+
 
 
 template <typename T>
-template <typename Func>
 
 Array::Array(const std::vector<std::optional<T>>& input){
 
@@ -32,7 +32,7 @@ void Array<std::optional<T>>::append(const Array<std::optional<T>>& arr){
     }
     size += arr.size();
 }
-void Array<std::optional<T>>::map(Func f){
+template <typename Func> void Array<std::optional<T>>::map(Func f){
     
     for(auto& e: this.sequence){
         if(e.has_value()){
@@ -40,14 +40,14 @@ void Array<std::optional<T>>::map(Func f){
         }
     }
 }
-void Array<std::optional<T>>::filter(Func f) {
+template <typename Func> void Array<std::optional<T>>::filter(Func f) {
     for(size_t it= 0; it<sizeof(this.sequence); it++){
         if(!f(sequence[it])){
             sequence.erase(sequence.begin()+it);
         }
     }
 }
-std::vector<size_t> Array<std::optional<T>>::filteredIndex(Func f) {
+template <typename Func> std::vector<size_t> Array<std::optional<T>>::filteredIndex(Func f) {
     vector<size_t> indexes;
     for( size_t it= 0; it<sizeof(this.sequence); it++){
         if(f(sequence[it])){
@@ -95,4 +95,14 @@ bool Array<std::optional<T>>::isNull(int idx){
 
 std::string typedef_() const{
     return typeid(T).name;
+}
+
+template <typename Func> T aggregate(Func aggFunc, T initialValue) const {
+    T result = initialValue;
+    for (const auto& value : data) {
+        if (value.has_value()) {
+            result = aggFunc(result, value.value());
+        }
+    }
+    return result;
 }
