@@ -8,14 +8,14 @@
 
 template <typename T>
 
-Table(std::unordered_map<std::string, Array<std::optional<T>>> input): table{input} {}
-void appendCol(std::string name, Array<std::optional<T>> input){
+Table(std::unordered_map<std::string, Array<std::optional<ArrayType>>> input): table{input} {}
+void Table::appendCol(std::string name, Array<std::optional<ArrayType>> input){
     if(input.find(name) != input.end()){
         throw std:::invalid_argument("Column name already exist, please enter something else");
     }
     table[name] = input;
 }
-void appendRow(std::vector<std::optional<T>> entry){
+void Table::appendRow(std::vector<std::optional<ArrayType>> entry){
     if (sizeof(entry) != numColumn ) {
         throw std::range_error("the number of column is different from the number of element in the entry");
     }
@@ -23,10 +23,8 @@ void appendRow(std::vector<std::optional<T>> entry){
     for(it = input.begin(); it!= input.end(); it++, idx++){
         it->second.append(entry[idx]);
     }
-
 }
-
-void rename(std::string oldName, std::string newName){
+void Table::rename(std::string oldName, std::string newName){
 
     oldPresent, newPresent = false, false
 
@@ -50,44 +48,44 @@ void rename(std::string oldName, std::string newName){
     table[newName] = table[oldName];
     table.erase(oldName);
 }
-T dataAt(std::string name, int idx){
+std::optional<ArrayType> Table::dataAt(std::string name, int idx){
     if (table.find(name) == table.end() ) {
         throw std::invalid_argument("Column name doesn't exist in the table");
     }
-    if(idx > numRow || idx<0){
+    if(idx >= numRow || idx<0){
         throw std::out_of_range("Index out of range");
     }
 
     return table[name].getByIndex(idx);
 }
-Array<std::optional<T>> column(std::string name){
+Array<std::optional<ArrayType>> Table::column(std::string name){
     if (table.find(name) == table.end() ) {
         throw std::invalid_argument("Column name doesn't exist in the table");
     }
 
     return table[name];
 }
-std::vector<std::any> row(size_t idx){ //similar to iloc in pandas
-    if(idx > numRow || idx<0){
+std::vector<ArrayType> Table::row(size_t idx){ //similar to iloc in pandas
+    if(idx >= numRow || idx<0){
         throw std::out_of_range("Index out of range");
     }
-    std::vector<std::any> row = {};
+    std::vector<ArrayType> row = {};
     for(it = table.begin(); it!= table.end(); it++){
-        row.emplace_back(it->second.getByIndex(idx))
+        row.emplace_back(it->second.getByIndex(idx));
     }
     return row;
 }
-std::vector<std::any> rows(std::vector<size_t> indexes){
+std::vector<ArrayType> Table::rows(std::vector<size_t> indexes){
     //check for duplicates
     for(auto idx: indexes){
-        if( idx > numRow || idx<0){
+        if( idx >= numRow || idx<0){
             throw std::out_of_range("Index out of range");
         }   
     }
 
-    std::vector<std::vector<std::any>> rows = {};
+    std::vector<std::vector<ArrayType>> rows = {};
     for(auto idx: indexes){
-        std::vector<std::any> row = {};
+        std::vector<ArrayType> row = {};
         for(it = table.begin(); it!= table.end(); it++){
             row.emplace_back(it->second.getByIndex(idx));
         }
@@ -95,16 +93,16 @@ std::vector<std::any> rows(std::vector<size_t> indexes){
     }
     return rows;
 }
-std::vector<std::optional<T>> rows(size_t start_idx, size_t end_idx){
+std::vector<std::optional<ArrayType>> Table::rows(size_t start_idx, size_t end_idx){
     for(auto idx= start_idx; idx <= end_idx; idx++){
-        if( idx > numRow || idx<0){
+        if( idx >= numRow || idx<0){
             throw std::out_of_range("Index out of range");
         }   
     }
     
-    std::vector<std::vector<std::any>> rows = {};
+    std::vector<std::vector<ArrayType>> rows = {};
     for(auto idx= start_idx; idx <= end_idx; idx++){
-        std::vector<std::any> row = {};
+        std::vector<ArrayType> row;
         for(it = table.begin(); it!= table.end(); it++){
             row.emplace_back(it->second.getByIndex(idx));
         }
@@ -112,12 +110,12 @@ std::vector<std::optional<T>> rows(size_t start_idx, size_t end_idx){
     }
     return rows;
 }
-void filterRow(Func f){
+void Table::filterRow(Func f){
     for(auto col: table){
         col.filter(f);
     }
 }
-void filterCol(std::vector<std::string> choosen, bool remove){
+void Table::filterCol(std::vector<std::string> choosen, bool remove){
     int numChoosen = choosen.size();
     //check for duplicates
     for(auto name: choose){
@@ -148,14 +146,13 @@ void filterCol(std::vector<std::string> choosen, bool remove){
         );  
     }
 }
-void map(Func f, std::string name){
+void Table::map(Func f, std::string name){
     if(input.find(name) == input.end()){
         throw std:::invalid_argument("Column name doesn't exist in this table");
     }
     table[name].map(f);
 }
-
-size_t memoryUsage() const{
+size_t Table::memoryUsage() const{
     int sum = 0;
     for(auto x: table){
         sum += sizeof(x.first) + x.second.memoryUsage();
@@ -163,8 +160,7 @@ size_t memoryUsage() const{
 
     return sum;
 }
-
-std::unordered_map<std::string, std::pair<size_t, size_t>> _createHashmapFromTable(Table t){
+std::unordered_map<std::string, std::pair<size_t, size_t>> Table::_createHashmapFromTable(Table t){
     std::unordered_map<std::string, std::pair<size_t, size_t>> map;
 
     // Create a hash map for the right table
@@ -178,7 +174,7 @@ std::unordered_map<std::string, std::pair<size_t, size_t>> _createHashmapFromTab
 
     return map;
 }
-Table innerJoin( Table right, std::vector<std::string> columns) const{
+Table Table::innerJoin( Table right, std::vector<std::string> columns) const{
     Table result;
     std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap = _createHashmapFromTable(right);
     // Perform the join
@@ -206,7 +202,7 @@ Table innerJoin( Table right, std::vector<std::string> columns) const{
     return result;
     
 }
-Table outerJoin( Table right, std::vector<std::string> columns ) const{
+Table Table::outerJoin( Table right, std::vector<std::string> columns ) const{
     
     std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap = _createHashmapFromTable(right);
     
@@ -229,7 +225,7 @@ Table outerJoin( Table right, std::vector<std::string> columns ) const{
 
     return result;
 }
-Table leftJoinProcessing(Table right, std::vector<std::string> columns, std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap) const {
+Table Table::leftJoinProcessing(Table right, std::vector<std::string> columns, std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap) const {
     Table result;
 
     for(size_t i = 0; i < this.table.at(columns[0]).size(); ++i){
@@ -267,28 +263,38 @@ Table leftJoinProcessing(Table right, std::vector<std::string> columns, std::uno
     }
     return result;
 }
-Table leftJoin( Table right, std::vector<std::string> columns) const{
+Table Table::leftJoin( Table right, std::vector<std::string> columns) const{
     std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap = _createHashmapFromTable(right);
     
     // Perform the join
     return leftJoinProcessing(right, columns, rightIndexMap);
 }
-Table rightJoin( Table right, std::vector<std::string> columns)const{
+Table Table::rightJoin( Table right, std::vector<std::string> columns)const{
 
     return leftJoin(right, columns);
 }
 
-template <typename Func> T aggregateColumn(const std::string& columnName, Func aggFunc, T initialValue) const{
+template <typename Func> T Table::aggregateColumn(const std::string& columnName, Func aggFunc, T initialValue) const{
     if (table.find(columnName) == table.end()) {
         throw std::invalid_argument("Column not found");
     }
     return table.at(columnName).aggregate(aggFunc, initialValue);
 }
 
-template <typename Func> std::unordered_map<std::string, T> aggregateColumns(const std::vector<std::string>& columnNames, Func aggFunc, T initialValue) const {
+template <typename Func> std::unordered_map<std::string, T> Table::aggregateColumns(const std::vector<std::string>& columnNames, Func aggFunc, T initialValue) const {
     std::unordered_map<std::string, T> results;
     for (const auto& columnName : columnNames) {
         results[columnName] = aggregateColumn(columnName, aggFunc, initialValue);
     }
     return results;
+}
+std::unordered_map<std::string, Array<std::optional<ArrayType>>> Table::getTable(){
+    return table;
+}
+
+size_t getNumColumn(){
+    return numColumn;
+}
+size_t getNumRow(){
+    return numRow;
 }
