@@ -90,11 +90,11 @@ bool Array<std::optional<T>>::isNull(int idx){
 
 }
 
-std::string typedef_() const{
+std::string Array<std::optional<T>>::typedef_() const{
     return typeid(T).name;
 }
 
-template <typename Func> T aggregate(Func aggFunc, T initialValue) const {
+template <typename Func> T Array<std::optional<T>>::aggregate(Func aggFunc, T initialValue) const {
     T result = initialValue;
     for (const auto& value : data) {
         if (value.has_value()) {
@@ -103,3 +103,8 @@ template <typename Func> T aggregate(Func aggFunc, T initialValue) const {
     }
     return result;
 }
+
+std::vector<std::optional<T>> Array<std::optional<T>>::getArray(){
+    return sequence;
+}
+

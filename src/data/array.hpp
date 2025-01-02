@@ -28,6 +28,8 @@ template <typename T> class Array{
         std::string typedef_() const; 
         template <typename Func> std::vector<size_t> filteredIndex(Func f);
         template <typename Func> T aggregate(Func aggFunc, T initialValue) const;
+        std::vector<std::optional<T>> getArray();
+        
    
 }
 
