@@ -7,8 +7,6 @@
 #include <optional>
 
 
-
-
 template <typename T> class Array{
 
     private: 
@@ -23,15 +21,14 @@ template <typename T> class Array{
         template <typename Func> void map(Func f);
         template <typename Func> void filter(Func f);
         size_t size();
-        // std::optional<T> aggregate(Func f);
         std::optional<T> getByIndex(int idx) const;
         size_t memoryUSsage() const;
         void fillNulls(T val);
         bool isNull(int idx) const;
         std::string typedef_() const; 
         template <typename Func> std::vector<size_t> filteredIndex(Func f);
-        template <typename Func> T aggregate(Func aggFunc, T initialValue) const
-        
+        template <typename Func> T aggregate(Func aggFunc, T initialValue) const;
+   
 }
 
 #endif

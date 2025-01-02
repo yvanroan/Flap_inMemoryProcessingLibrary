@@ -35,9 +35,7 @@ void Array<std::optional<T>>::append(const Array<std::optional<T>>& arr){
 template <typename Func> void Array<std::optional<T>>::map(Func f){
     
     for(auto& e: this.sequence){
-        if(e.has_value()){
-            e=f(e.value());
-        }
+        e=f(e.value()); 
     }
 }
 template <typename Func> void Array<std::optional<T>>::filter(Func f) {
@@ -57,7 +55,6 @@ template <typename Func> std::vector<size_t> Array<std::optional<T>>::filteredIn
     return indexes;
 }
 
-//will implement aggregate later
 
 size_t Arrat<std::optional<T>>::size(){
     return size;
