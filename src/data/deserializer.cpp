@@ -51,20 +51,20 @@ public:
         const std::vector<std::string>& types,
         const std::vector<std::string>& columnNames,
         const std::vector<std::string>& rowValues,
-        std::unordered_map<std::string, Array>& columns) {
+        Table t) {
         
         for (size_t i = 0; i < columnNames.size(); ++i) {
             const auto& cell = rowValues[i];
             if (cell.empty()) {
-                columns[columnNames[i]].append(std::nullopt); // Null value
+                t[columnNames[i]].append(std::nullopt); // Null value
             } else if (types[i] == "int") {
-                columns[columnNames[i]].append(std::stoi(cell));
+                t[columnNames[i]].append(std::make_optional<std::int>(std::stoi(cell)));
             } else if (types[i] == "float") {
-                columns[columnNames[i]].append(std::stof(cell));
+                t[columnNames[i]].append(std::make_optional<std::float>(std::stof(cell)));
             } else if (types[i] == "double") {
-                columns[columnNames[i]].append(std::stod(cell));
+                t[columnNames[i]].append(std::make_optional<std::double>(std::stod(cell)));
             } else if (types[i] == "string") {
-                columns[columnNames[i]].append(cell);
+                t[columnNames[i]].append(std::make_optional<std::string>(cell));
             } else {
                 throw std::invalid_argument("Unsupported type: " + types[i]);
             }
@@ -158,21 +158,17 @@ public:
             throw std::runtime_error("Mismatch between column names and type definitions.");
         }
 
-        std::unordered_map<std::string, Array> columns;
-
-        for (size_t i = 0; i < columnNames.size(); ++i) {
-            columns[columnNames[i]] = Array();
-        }
+        Table t;
 
         while (std::getline(csv, line)) {
             auto rowValues = splitCsvLine(line);
             if (rowValues.size() != columnNames.size()) {
                 throw std::runtime_error("Row size does not match column size.");
             }
-            populateColumns(types, columnNames, rowValues, columns);
+            populateColumns(types, columnNames, rowValues, t);
         }
 
-        return Table(columns);
+        return t;
     }
     
 
@@ -183,17 +179,17 @@ public:
             throw std::invalid_argument("Input JSON is not a valid object.");
         }
         
-        std::unordered_map<std::string, Array> columns;
+        Table t;
 
         for (const auto& [key, value] : parsedJson.items()) {
             if (!value.is_array()) {
                 throw std::invalid_argument("JSON value for column is not an array.");
             }
             Array array = jsonToArray(value.dump());
-            columns[key] = array;
+            t[key] = array;
         }
 
-        return Table(columns);
+        return t;
     }
 
 }

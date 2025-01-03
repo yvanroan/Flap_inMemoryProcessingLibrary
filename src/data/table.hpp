@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include "array.hpp"
+#include <variant>
 #include <optional>
 #include <unordered_map>
 
@@ -21,6 +22,7 @@ class Table{
         std::unordered_map<std::string, std::pair<size_t, size_t>> _createHashmapFromTable(Table t);
         Table leftJoinProcessing(Table left, Table right, std::vector<std::string> columns, std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap);
     public:
+        Table()= default;
         Table(std::unordered_map<std::string, Array> input);
         void appendCol(std::string name, Array input);
         void appendRow(std::vector entry);
@@ -47,5 +49,6 @@ class Table{
         std::unordered_map<std::string, Array> getTable();
         size_t getNumColumn();
         size_t getNumRow();
+        Array& operator[](const std::string& columnName) ;
 }
 #endif

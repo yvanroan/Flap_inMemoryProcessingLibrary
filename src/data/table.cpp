@@ -297,3 +297,12 @@ size_t getNumColumn(){
 size_t getNumRow(){
     return numRow;
 }
+
+Array& Table::operator[](const std::string& columnName) {
+    
+    if (table.find(columnName) == table.end()) {
+        table[columnName] = Array();
+        ++numColum;
+    }
+    return table[columnName];
+}
