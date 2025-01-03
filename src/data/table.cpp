@@ -6,10 +6,9 @@
 #include <optional>
 #include <unordered_map>
 
-template <typename T>
 
-Table(std::unordered_map<std::string, Array<std::optional<ArrayType>>> input): table{input} {}
-void Table::appendCol(std::string name, Array<std::optional<ArrayType>> input){
+Table(std::unordered_map<std::string, Array> input): table{input} {}
+void Table::appendCol(std::string name, Array input){
     if(input.find(name) != input.end()){
         throw std:::invalid_argument("Column name already exist, please enter something else");
     }
@@ -58,7 +57,7 @@ std::optional<ArrayType> Table::dataAt(std::string name, int idx){
 
     return table[name].getByIndex(idx);
 }
-Array<std::optional<ArrayType>> Table::column(std::string name){
+Array Table::column(std::string name){
     if (table.find(name) == table.end() ) {
         throw std::invalid_argument("Column name doesn't exist in the table");
     }
@@ -274,21 +273,21 @@ Table Table::rightJoin( Table right, std::vector<std::string> columns)const{
     return leftJoin(right, columns);
 }
 
-template <typename Func> T Table::aggregateColumn(const std::string& columnName, Func aggFunc, T initialValue) const{
+template <typename Func> ArrayType Table::aggregateColumn(const std::string& columnName, Func aggFunc, ArrayType initialValue) const{
     if (table.find(columnName) == table.end()) {
         throw std::invalid_argument("Column not found");
     }
     return table.at(columnName).aggregate(aggFunc, initialValue);
 }
 
-template <typename Func> std::unordered_map<std::string, T> Table::aggregateColumns(const std::vector<std::string>& columnNames, Func aggFunc, T initialValue) const {
+template <typename Func> std::unordered_map<std::string, T> Table::aggregateColumns(const std::vector<std::string>& columnNames, Func aggFunc, ArrayType initialValue) const {
     std::unordered_map<std::string, T> results;
     for (const auto& columnName : columnNames) {
         results[columnName] = aggregateColumn(columnName, aggFunc, initialValue);
     }
     return results;
 }
-std::unordered_map<std::string, Array<std::optional<ArrayType>>> Table::getTable(){
+std::unordered_map<std::string, Array> Table::getTable(){
     return table;
 }
 
