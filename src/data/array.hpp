@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include <variant>
 
 using ArrayType = std::variant<int, float, double, std::string>;
 
