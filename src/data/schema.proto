@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+message Array {
+    repeated Value sequence = 1;
+}
+
+message Table {
+    map<string, Array> columns = 1;
+    uint32 numRow = 2;
+    uint32 numColum = 3;
+}
+
+message Value {
+    bool is_null = 1;
+    oneof value {
+        int32 int_val = 2;
+        float float_val = 3;
+        double double_val = 4;
+        string string_val = 5;
+    }
+}
