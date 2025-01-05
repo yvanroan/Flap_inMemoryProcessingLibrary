@@ -2,29 +2,55 @@
 #include <vector>
 #include <optional>
 #include <typeinfo>
+#include <stdexcept>
 #include "array.hpp"
+#include "memManager.hpp"
+
+Array::Array(){
+    mem_id = memManager::getInstance().registerInstance(0);
+}
 
 Array::Array(const std::vector<std::optional<ArrayType>>& input){
+
+    mem_id = memManager::getInstance().registerInstance();
 
     for(auto e: input){
         sequence.emplace_back(e);
     }
     size += input.size();
+
+
+    mem_id = memManager::getInstance().registerInstance(size * sizeof(sequence[0]));
+}
+
+Array::~Array(){
+    memManager::getInstance().removeInstance(mem_id);
 }
 
 Array::Array(std::optional<ArrayType> data){
     sequence.emplace_back(data);
     size++;
+    mem_id = memManager::getInstance().registerInstance(size * sizeof(sequence[0]));
 }
+
+void Array::memoryUsage() const{
+    return size * sizeof(sequence[0]);
+} 
+
+void Array::reportMemoryUsage() const{
+    memManager::getInstance().updateInstance(mem_id, memoryUsage());
+} 
 
 void Array::append(std::optional<ArrayType> data){
     sequence.emplace_back(data);
     size++;
+    reportMemoryUsage();
 }
 
 void Array::appendNull(){
     sequence.emplace_back(std::nullopt);
     size++;
+    reportMemoryUsage();
 }
 
 void Array::extend(const Array& arr){
@@ -33,6 +59,8 @@ void Array::extend(const Array& arr){
         sequence.emplace_back(e);
     }
     size += arr.size();
+
+    reportMemoryUsage();
 }
 
 template <typename Func> 
@@ -41,6 +69,8 @@ void Array::map(Func f){
     for(auto& e: this.sequence){
         e=f(e.value()); 
     }
+
+    reportMemoryUsage();
 }
 
 template <typename Func> 
@@ -50,6 +80,7 @@ void Array::filter(Func f) {
             sequence.erase(sequence.begin()+it);
         }
     }
+    reportMemoryUsage();
 }
 
 template <typename Func> 
@@ -74,13 +105,6 @@ std::optional<ArrayType> Array::getByIndex(int idx) const{
     return sequence[idx];
 }
 
-size_t Array::memoryUsage() const{
-    if(size == 0){
-        return 0;
-    }
-    return size * sizeof(sequence[0])
-} 
-
 void Array::fillNulls( ArrayType val){
     for(size_t i=0; i<n; i++){
         if(!sequence[i].has_value()){
@@ -93,9 +117,13 @@ bool Array::isNull(int idx){
     if (idx >= sequence.size()) {
         throw std::out_of_range("Index out of range");
     }
-    return !sequence[idx].has_value()
+    return !sequence[idx].has_value();
 
 }
+
+void Array::memoryUsage() const{
+    return size * sizeof(sequence[0]);
+} 
 
 std::string Array::typedef_() const {
     if (sequence.empty()) {

@@ -4,24 +4,49 @@
 #include "array.hpp"
 #include "table.hpp"
 #include <optional>
+#include <stdexcept>
 #include <unordered_map>
 
 
-Table(std::unordered_map<std::string, Array> input): table{input} {}
+Table():{
+    mem_id = memManager::getInstance().registerInstance(0);
+}
+
+Table(std::unordered_map<std::string, Array> input): table{input} {
+    mem_id = memManager::getInstance().registerInstance(memoryUsage());
+}
+
+size_t Table::reportMemoryUsage() const{
+    int sum = 0;
+    for(auto x: table){
+        sum += sizeof(x.first) + x.second.memoryUsage();
+    }
+
+    return sum;
+}
+
+void Table::reportMemoryUsage() const{
+    memManager::getInstance().updateInstance(memoryUsage());
+}
+
 void Table::appendCol(std::string name, Array input){
     if(input.find(name) != input.end()){
         throw std:::invalid_argument("Column name already exist, please enter something else");
     }
     table[name] = input;
+    reportMemoryUsage();
 }
 void Table::appendRow(std::vector<std::optional<ArrayType>> entry){
     if (sizeof(entry) != numColumn ) {
         throw std::range_error("the number of column is different from the number of element in the entry");
     }
+
     int idx=0;
+
     for(it = input.begin(); it!= input.end(); it++, idx++){
         it->second.append(entry[idx]);
     }
+    reportMemoryUsage();
 }
 void Table::rename(std::string oldName, std::string newName){
 
@@ -46,6 +71,8 @@ void Table::rename(std::string oldName, std::string newName){
 
     table[newName] = table[oldName];
     table.erase(oldName);
+
+    reportMemoryUsage();
 }
 std::optional<ArrayType> Table::dataAt(std::string name, int idx){
     if (table.find(name) == table.end() ) {
@@ -68,13 +95,15 @@ std::vector<ArrayType> Table::row(size_t idx){ //similar to iloc in pandas
     if(idx >= numRow || idx<0){
         throw std::out_of_range("Index out of range");
     }
+    size_t curMem=0
     std::vector<ArrayType> row = {};
     for(it = table.begin(); it!= table.end(); it++){
         row.emplace_back(it->second.getByIndex(idx));
     }
+    memManager::getInstance().updateInstance(memoryUsage() + (row.capacity()*sizeof(ArrayType)));
     return row;
 }
-std::vector<ArrayType> Table::rows(std::vector<size_t> indexes){
+std::vector<std::vector<ArrayType>> Table::rows(std::vector<size_t> indexes){
     //check for duplicates
     for(auto idx: indexes){
         if( idx >= numRow || idx<0){
@@ -82,14 +111,20 @@ std::vector<ArrayType> Table::rows(std::vector<size_t> indexes){
         }   
     }
 
+    size_t curMem= 0;
+
     std::vector<std::vector<ArrayType>> rows = {};
     for(auto idx: indexes){
         std::vector<ArrayType> row = {};
         for(it = table.begin(); it!= table.end(); it++){
             row.emplace_back(it->second.getByIndex(idx));
+            
         }
+        curMem += sizeof(row) + (row.capacity() * sizeof(ArrayType));
         rows.emplace_back(row);
     }
+
+    memManager::getInstance().updateInstance(memoryUsage()+curMem);
     return rows;
 }
 std::vector<std::optional<ArrayType>> Table::rows(size_t start_idx, size_t end_idx){
@@ -98,6 +133,8 @@ std::vector<std::optional<ArrayType>> Table::rows(size_t start_idx, size_t end_i
             throw std::out_of_range("Index out of range");
         }   
     }
+
+    size_t curMem= 0;
     
     std::vector<std::vector<ArrayType>> rows = {};
     for(auto idx= start_idx; idx <= end_idx; idx++){
@@ -105,14 +142,22 @@ std::vector<std::optional<ArrayType>> Table::rows(size_t start_idx, size_t end_i
         for(it = table.begin(); it!= table.end(); it++){
             row.emplace_back(it->second.getByIndex(idx));
         }
+        curMem += sizeof(row) + (row.capacity() * sizeof(ArrayType));
         rows.emplace_back(row);
     }
+
+    memManager::getInstance().updateInstance(memoryUsage()+curMem);
     return rows;
 }
+
+
+template <typename Func> 
 void Table::filterRow(Func f){
-    for(auto col: table){
-        col.filter(f);
+    for(auto [name, arr]: table){
+        f(name, arr);
     }
+
+    reportMemoryUsage();
 }
 void Table::filterCol(std::vector<std::string> choosen, bool remove){
     int numChoosen = choosen.size();
@@ -144,21 +189,18 @@ void Table::filterCol(std::vector<std::string> choosen, bool remove){
             table.end()
         );  
     }
+    reportMemoryUsage();
 }
+template <typename Func> 
 void Table::map(Func f, std::string name){
     if(input.find(name) == input.end()){
         throw std:::invalid_argument("Column name doesn't exist in this table");
     }
     table[name].map(f);
+    reportMemoryUsage();
 }
-size_t Table::memoryUsage() const{
-    int sum = 0;
-    for(auto x: table){
-        sum += sizeof(x.first) + x.second.memoryUsage();
-    }
 
-    return sum;
-}
+
 std::unordered_map<std::string, std::pair<size_t, size_t>> Table::_createHashmapFromTable(Table t){
     std::unordered_map<std::string, std::pair<size_t, size_t>> map;
 
@@ -273,7 +315,8 @@ Table Table::rightJoin( Table right, std::vector<std::string> columns)const{
     return leftJoin(right, columns);
 }
 
-template <typename Func> ArrayType Table::aggregateColumn(const std::string& columnName, Func aggFunc, ArrayType initialValue) const{
+template <typename Func> 
+ArrayType Table::aggregateColumn(const std::string& columnName, Func aggFunc, ArrayType initialValue) const{
     if (table.find(columnName) == table.end()) {
         throw std::invalid_argument("Column not found");
     }
@@ -291,10 +334,10 @@ std::unordered_map<std::string, Array> Table::getTable(){
     return table;
 }
 
-size_t getNumColumn(){
+size_t Table::getNumColumn(){
     return numColumn;
 }
-size_t getNumRow(){
+size_t Table::getNumRow(){
     return numRow;
 }
 

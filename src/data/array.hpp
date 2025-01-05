@@ -14,9 +14,10 @@ class Array{
     private: 
         std::vector<std::optional<ArrayType>> sequence;
         size_t size;
+        size_t mem_id;
 
     public:
-        Array() = default;
+        Array();
         Array(std::vector<std::optional<ArrayType>> input);
         Array(std::optional<ArrayType> data);
         void append(std::optional<ArrayType> data);
@@ -43,8 +44,8 @@ class Array{
         ArrayType aggregate(Func aggFunc, ArrayType initialValue) const;
 
         std::vector<std::optional<ArrayType>> getArray();
-        
-   
+
+        void reportMemoryUsage() const;  
 }
 
 #endif
