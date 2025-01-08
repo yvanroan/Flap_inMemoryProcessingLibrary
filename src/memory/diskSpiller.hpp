@@ -30,7 +30,7 @@ public:
 
     void collect(size_t id, ObjectType obj);
 
-    ObjectType accessObject(size_t id);
+    ObjectType load(size_t id);
 
     void cleanup();
 };

@@ -71,7 +71,7 @@ ObjectType DiskSpiller::deserializeFromFile(const std::string& filePath) {
     return obj;
 }
 
-ObjectType DiskSpiller::accessObject(size_t id) {
+ObjectType DiskSpiller::load(size_t id) {
     
 
     if (evictedObjects.find(id) != evictedObjects.end()) {
