@@ -17,7 +17,7 @@ class memManager{
 
         std::unordered_map<size_t, int> accessFrequency;
 
-        std::unordered_map<size_t, std::unique_ptr<ObjectType>> objectMap;
+        std::unordered_map<size_t, std::shared_ptr<ObjectType>> objectMap;
 
         std::multimap<int, size_t> frequencyMap;
 
@@ -45,7 +45,7 @@ class memManager{
         void updateFrequency(size_t id);
         void memManager::updateFrequency(size_t id);
         ObjectType getObject(size_t id);
-
+        bool memManager::isInMemory(size_t id)
 }
 
 #endif

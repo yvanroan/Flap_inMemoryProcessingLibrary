@@ -127,3 +127,7 @@ ObjectType memManager::getObject(size_t id) {
 
     return result;
 }
+
+bool memManager::isInMemory(size_t id){
+    return !(memTracker.find(id)==memTracker.end())
+}
