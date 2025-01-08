@@ -98,7 +98,7 @@ size_t Array::size(){
     return size;
 }
 
-std::optional<ArrayType> Array::getByIndex(int idx) const{
+std::optional<ArrayType> Array::operator[](int idx) const{
     if (idx >= sequence.size()) {
         throw std::out_of_range("Index out of range");
     }

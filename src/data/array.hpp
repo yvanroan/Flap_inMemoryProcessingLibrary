@@ -31,8 +31,8 @@ class Array{
         void filter(Func f);
 
         size_t size();
-        std::optional<ArrayType> getByIndex(int idx) const;
-        size_t memoryUSsage() const;
+        std::optional<ArrayType> operator[](int idx) const;
+        size_t memoryUsage() const;
         void fillNulls(ArrayType val);
         bool isNull(int idx) const;
         std::string typedef_() const; 
@@ -42,7 +42,6 @@ class Array{
 
         template <typename Func> 
         ArrayType aggregate(Func aggFunc, ArrayType initialValue) const;
-
         std::vector<std::optional<ArrayType>> getArray();
 
         void reportMemoryUsage() const;  
