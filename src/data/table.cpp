@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 
-Table():{
+Table(){
     mem_id = memManager::getInstance().registerInstance(0);
 }
 
@@ -205,7 +205,7 @@ std::unordered_map<std::string, std::pair<size_t, size_t>> Table::_createHashmap
     std::unordered_map<std::string, std::pair<size_t, size_t>> map;
 
     // Create a hash map for the right table
-    for(size_t i = 0; i < t.table.at(columns[0]).size(); ++i){
+    for(size_t i = 0; i < t.getTable().at(columns[0]).size(); ++i){
         std::string key = "";
         for(const auto& col : columns){
             key += t.table.at(col)[i].value_or("")+ "|";
@@ -216,6 +216,13 @@ std::unordered_map<std::string, std::pair<size_t, size_t>> Table::_createHashmap
     return map;
 }
 Table Table::innerJoin( Table right, std::vector<std::string> columns) const{
+    
+    for(const auto col: columns){
+        if(table.find(col) == table.end() or right.getTable().find(col) == right.getTable().end()){
+            throw std::invalid_argument("Column name is absent in one of the tables");
+        }
+    }
+    
     Table result;
     std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap = _createHashmapFromTable(right);
     // Perform the join
@@ -245,6 +252,11 @@ Table Table::innerJoin( Table right, std::vector<std::string> columns) const{
 }
 Table Table::outerJoin( Table right, std::vector<std::string> columns ) const{
     
+    for(const auto col: columns){
+        if(table.find(col) == table.end() or right.getTable().find(col) == right.getTable().end()){
+            throw std::invalid_argument("Column name is absent in one of the tables");
+        }
+    }
     std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap = _createHashmapFromTable(right);
     
     // Perform the join
@@ -268,6 +280,8 @@ Table Table::outerJoin( Table right, std::vector<std::string> columns ) const{
 }
 Table Table::leftJoinProcessing(Table right, std::vector<std::string> columns, std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap) const {
     Table result;
+
+    
 
     for(size_t i = 0; i < this.table.at(columns[0]).size(); ++i){
         std::string key = "";
@@ -305,6 +319,11 @@ Table Table::leftJoinProcessing(Table right, std::vector<std::string> columns, s
     return result;
 }
 Table Table::leftJoin( Table right, std::vector<std::string> columns) const{
+    for(const auto col: columns){
+        if(table.find(col) == table.end() or right.getTable().find(col) == right.getTable().end()){
+            throw std::invalid_argument("Column name is absent in one of the tables");
+        }
+    }
     std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap = _createHashmapFromTable(right);
     
     // Perform the join
@@ -312,7 +331,7 @@ Table Table::leftJoin( Table right, std::vector<std::string> columns) const{
 }
 Table Table::rightJoin( Table right, std::vector<std::string> columns)const{
 
-    return leftJoin(right, columns);
+    return right.leftJoin(this, columns);
 }
 
 template <typename Func> 
@@ -323,8 +342,9 @@ ArrayType Table::aggregateColumn(const std::string& columnName, Func aggFunc, Ar
     return table.at(columnName).aggregate(aggFunc, initialValue);
 }
 
-template <typename Func> std::unordered_map<std::string, T> Table::aggregateColumns(const std::vector<std::string>& columnNames, Func aggFunc, ArrayType initialValue) const {
-    std::unordered_map<std::string, T> results;
+template <typename Func> 
+std::unordered_map<std::string, ArrayType> Table::aggregateColumns(const std::vector<std::string>& columnNames, Func aggFunc, ArrayType initialValue) const {
+    std::unordered_map<std::string, ArrayType> results;
     for (const auto& columnName : columnNames) {
         results[columnName] = aggregateColumn(columnName, aggFunc, initialValue);
     }

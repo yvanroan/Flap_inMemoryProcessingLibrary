@@ -18,6 +18,7 @@ class Table{
         std::unordered_map<std::string, Array> table;
         size_t numColum;
         size_t numRow;
+        size_t mem_id;
 
         std::unordered_map<std::string, std::pair<size_t, size_t>> _createHashmapFromTable(Table t);
         Table leftJoinProcessing(Table left, Table right, std::vector<std::string> columns, std::unordered_map<std::string, std::pair<size_t, size_t>> rightIndexMap);
@@ -25,7 +26,7 @@ class Table{
         Table();
         Table(std::unordered_map<std::string, Array> input);
         void appendCol(std::string name, Array input);
-        void appendRow(std::vector entry);
+        void appendRow(std::vector<std::optional<ArrayType>> entry);
         void rename(std::string oldName, std::string newName);
         std::optional<ArrayType> dataAt(std::string name, size_t idx);
         Array column(std::string name);
