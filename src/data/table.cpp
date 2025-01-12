@@ -1,18 +1,19 @@
 
-#include <vector>
-#include <string>
-#include "array.hpp"
+
 #include "table.hpp"
-#include <optional>
 #include <stdexcept>
-#include <unordered_map>
 
 
-Table(){
+Table::Table(){
     mem_id = memManager::getInstance().registerInstance(0);
 }
 
-Table(std::unordered_map<std::string, Array> input): table{input} {
+
+Table::Table(Table t): table{t.getTable()}{
+    mem_id = memManager::getInstance().registerInstance(memoryUsage());
+}
+
+Table::Table(std::unordered_map<std::string, Array> input): table{input} {
     mem_id = memManager::getInstance().registerInstance(memoryUsage());
 }
 
@@ -37,7 +38,7 @@ void Table::appendCol(std::string name, Array input){
     reportMemoryUsage();
 }
 void Table::appendRow(std::vector<std::optional<ArrayType>> entry){
-    if (sizeof(entry) != numColumn ) {
+    if (entry.size() != numColumn ) {
         throw std::range_error("the number of column is different from the number of element in the entry");
     }
 
@@ -82,7 +83,7 @@ std::optional<ArrayType> Table::dataAt(std::string name, int idx){
         throw std::out_of_range("Index out of range");
     }
 
-    return table[name].getByIndex(idx);
+    return table[name][idx];
 }
 Array Table::column(std::string name){
     if (table.find(name) == table.end() ) {
@@ -91,20 +92,20 @@ Array Table::column(std::string name){
 
     return table[name];
 }
-std::vector<ArrayType> Table::row(size_t idx){ //similar to iloc in pandas
+std::vector<std::optional<ArrayType>> Table::row(size_t idx){ //similar to iloc in pandas
     if(idx >= numRow || idx<0){
         throw std::out_of_range("Index out of range");
     }
     size_t curMem=0
-    std::vector<ArrayType> row = {};
+    std::vector<std::optional<ArrayType>> row = {};
     for(it = table.begin(); it!= table.end(); it++){
-        row.emplace_back(it->second.getByIndex(idx));
+        row.emplace_back((it->second)[idx]);
     }
     memManager::getInstance().updateInstance(memoryUsage() + (row.capacity()*sizeof(ArrayType)));
     return row;
 }
-std::vector<std::vector<ArrayType>> Table::rows(std::vector<size_t> indexes){
-    //check for duplicates
+std::vector<std::vector<std::optional<ArrayType>>> Table::rows(std::vector<size_t> indexes){
+    
     for(auto idx: indexes){
         if( idx >= numRow || idx<0){
             throw std::out_of_range("Index out of range");
@@ -113,14 +114,14 @@ std::vector<std::vector<ArrayType>> Table::rows(std::vector<size_t> indexes){
 
     size_t curMem= 0;
 
-    std::vector<std::vector<ArrayType>> rows = {};
+    std::vector<std::vector<std::optional<ArrayType>>> rows = {};
     for(auto idx: indexes){
-        std::vector<ArrayType> row = {};
+        std::vector<std::optional<ArrayType>> row = {};
         for(it = table.begin(); it!= table.end(); it++){
-            row.emplace_back(it->second.getByIndex(idx));
+            row.emplace_back((it->second)[idx]);
             
         }
-        curMem += sizeof(row) + (row.capacity() * sizeof(ArrayType));
+        curMem += sizeof(row) + (row.capacity() * sizeof(std::optional<ArrayType>));
         rows.emplace_back(row);
     }
 
@@ -128,6 +129,7 @@ std::vector<std::vector<ArrayType>> Table::rows(std::vector<size_t> indexes){
     return rows;
 }
 std::vector<std::optional<ArrayType>> Table::rows(size_t start_idx, size_t end_idx){
+    
     for(auto idx= start_idx; idx <= end_idx; idx++){
         if( idx >= numRow || idx<0){
             throw std::out_of_range("Index out of range");
@@ -136,13 +138,14 @@ std::vector<std::optional<ArrayType>> Table::rows(size_t start_idx, size_t end_i
 
     size_t curMem= 0;
     
-    std::vector<std::vector<ArrayType>> rows = {};
+    std::vector<std::vector<std::optional<ArrayType>>> rows = {};
+
     for(auto idx= start_idx; idx <= end_idx; idx++){
         std::vector<ArrayType> row;
         for(it = table.begin(); it!= table.end(); it++){
-            row.emplace_back(it->second.getByIndex(idx));
+            row.emplace_back((it->second)[idx]);
         }
-        curMem += sizeof(row) + (row.capacity() * sizeof(ArrayType));
+        curMem += sizeof(row) + (row.capacity() * sizeof(std::optional<ArrayType>));
         rows.emplace_back(row);
     }
 
@@ -150,12 +153,27 @@ std::vector<std::optional<ArrayType>> Table::rows(size_t start_idx, size_t end_i
     return rows;
 }
 
+void Table::removeCol(std::string colName){
+    if(table.find(colName)==table.end()){
+        throw std::invalid_argument("the column name provided doesn't exist");
+    }
+    table.erase(colName);
+}
+void Table::removeRows(std::vector<size_t> rowNumbers){
+
+    for(auto& [_, arr]: table){
+        for(size_t idx: rowNumbers){
+            arr.removeByIndex(idx);
+        }
+    }
+}
 
 template <typename Func> 
-void Table::filterRow(Func f){
-    for(auto [name, arr]: table){
-        f(name, arr);
-    }
+void Table::filterRow(Func f, std::string columnName){
+    
+    std::vector<size_t> indexes = table[columnName].filteredIndex(f);
+    
+    removeRows(indexes);
 
     reportMemoryUsage();
 }
@@ -343,12 +361,12 @@ ArrayType Table::aggregateColumn(const std::string& columnName, Func aggFunc, Ar
 }
 
 template <typename Func> 
-std::unordered_map<std::string, ArrayType> Table::aggregateColumns(const std::vector<std::string>& columnNames, Func aggFunc, ArrayType initialValue) const {
+Table Table::aggregateColumns(const std::vector<std::string>& columnNames, Func aggFunc, ArrayType initialValue) const {
     std::unordered_map<std::string, ArrayType> results;
     for (const auto& columnName : columnNames) {
         results[columnName] = aggregateColumn(columnName, aggFunc, initialValue);
     }
-    return results;
+    return Table(results);
 }
 std::unordered_map<std::string, Array> Table::getTable(){
     return table;
