@@ -1,6 +1,4 @@
 #include <iostream>
-#include <vector>
-#include <optional>
 #include <typeinfo>
 #include <stdexcept>
 #include "array.hpp"
@@ -75,7 +73,7 @@ void Array::map(Func f){
 
 template <typename Func> 
 void Array::filter(Func f) {
-    for(size_t it= 0; it<sizeof(this.sequence); it++){
+    for(size_t it= 0; it<this.sequence.size(); it++){
         if(!f(sequence[it])){
             sequence.erase(sequence.begin()+it);
         }
@@ -86,12 +84,29 @@ void Array::filter(Func f) {
 template <typename Func> 
 std::vector<size_t> Array::filteredIndex(Func f) {
     vector<size_t> indexes;
-    for( size_t it= 0; it<sizeof(this.sequence); it++){
+    for( size_t it= 0; it<this.sequence.size(); it++){
         if(f(sequence[it])){
             indexes.emplace_back(it);
         }
     }
     return indexes;
+}
+
+void Array::removeByIndex(const std::vector<size_t> indexes) {
+
+    for (size_t idx : indexes) {
+        if (idx >= sequence.size()) {
+            throw std::out_of_range("At least one index is out of range. Make sure you start from idx zero");
+        }
+    }
+
+    // Sort and remove from the end to avoid index shifting
+    std::vector<size_t> sortedIndexes = indexes;
+    std::sort(sortedIndexes.rbegin(), sortedIndexes.rend());
+    
+    for (size_t idx : sortedIndexes) {
+        sequence.erase(sequence.begin() + idx);
+    }
 }
 
 size_t Array::size(){

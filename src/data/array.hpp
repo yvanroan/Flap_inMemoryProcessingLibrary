@@ -40,6 +40,8 @@ class Array{
         template <typename Func> 
         std::vector<size_t> filteredIndex(Func f);
 
+        void removeByIndex(const std::vector<size_t> indexes);
+
         template <typename Func> 
         ArrayType aggregate(Func aggFunc, ArrayType initialValue) const;
         std::vector<std::optional<ArrayType>> getArray();
