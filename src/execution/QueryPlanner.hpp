@@ -11,12 +11,19 @@
 class Array;
 class Table;
 
-using ArrayType = std::variant<int, float, double, std::string>;
-using ParamsType = std::variant<int, std::string, float, double, Table*, Array* >;
+using ArrayType = std::variant< size_t, int, float, double, std::string>;
+
+using ParamsType = std::variant<size_t, int, std::string, float, double, Table*, Array*, 
+                                std::function<std::optional<ArrayType>(std::optional<ArrayType>)>,
+                                std::function<bool(std::optional<ArrayType>)>,
+                                std::function<ArrayType(ArrayType, ArrayType)>>;
+
+using FuncReturnType = std::variant<std::vector<std::optional<ArrayType>>, std::vector<std::vector<std::optional<ArrayType>>>, Array*, Table* ,std::vector<size_t>, ArrayType, std::optional<ArrayType>>;
 
 struct QueryNode {
         std::variant<Array*,Table*> subject;
         std::string operatorType;   
+        int return_type;
         std::vector<ParmasType>;
 };
 
@@ -26,45 +33,7 @@ class QueryPlanner{
         std::vector<QueryNode> queryPlan;
         static QueryPlanner instance;
 
-        static const std::unordered_map<std::string, std::vector<std::pair<std::string, std::type_index>>> operatorMetadata = {
-            //array
-            {"append", {
-                {"additional_data", typeid(std::optional<ArrayType>)}
-            }},
-
-            {"extend", {
-                {"extraArray", typeid(Array*)}
-            }},
-
-            {"appendNull", {} },
-
-            {"map", {
-                {"mapFunc", typeid(std::function<std::optional<ArrayType>(std::optional<ArrayType>)>)}
-            }},
-            
-            {"filter", {
-                {"filterFunc", typeid(std::function<bool(std::optional<ArrayType>)>)}
-            }},
-
-            {"size", {} },
-
-            {"fillNulls", {
-                {"val", typeid(ArrayType)}
-            } },
-
-            {"isNullAt", {
-                {"idx", typeid(int)}
-            }},
-
-            {"filteredIndex", {
-                {"filterFunc", typeid(std::function<bool(std::optional<ArrayType>)>)}
-            }},
-
-            {"aggregate", {
-                {"aggFunc", typeid(std::function<ArrayType(ArrayType, ArrayType)>)},
-                {"initialValue", typeid(ArrayType)}
-            }},
-
+        static const std::unordered_map<std::string, std::vector<std::pair<std::string, std::type_index>>> operatorTableMetadata = {
             //table
             {"appendCol", {
                 {"columnName", typeid(std::string)},
@@ -80,11 +49,6 @@ class QueryPlanner{
                 {"newName", typeid(std::string)}
             }},
 
-            {"dataAt", {
-                {"columnName", typeid(std::string)},
-                {"rowNumber", typeid(int)},
-            }},
-
             {"column", {
                 {"columnName", typeid(std::string)}
             }},
@@ -93,11 +57,11 @@ class QueryPlanner{
                 {"rowNumber", typeid(int)},
             }},
 
-            {"rows", {
+            {"rows_vector", {
                 {"indexes", typeid(std::vector<std::int>)}
             }},
 
-            {"rows", {
+            {"rows_idx", {
                 {"startRowNumber", typeid(int)},
                 {"endRowNumber", typeid(int)},
             }},
@@ -114,18 +78,6 @@ class QueryPlanner{
             {"map", {
                 {"mapFunc", typeid(std::function<ArrayType(ArrayType)>)},
                 {"columnName", typeid(std::string)},
-            }},
-
-            {"aggregateColumn", {
-                {"columnName", typeid(std::string)},
-                {"aggFunc", typeid(std::function<ArrayType(ArrayType, ArrayType)>)},
-                {"initialValue", typeid(ArrayType)}
-            }},
-
-            {"aggregateColumns", {
-                {"columnNames", typeid(std::vector<std::string>)},
-                {"aggFunc", typeid(std::function<ArrayType(ArrayType, ArrayType)>)},
-                {"initialValue", typeid(ArrayType)}
             }},
 
             {"innerJoin", {
@@ -152,6 +104,60 @@ class QueryPlanner{
                 {"keyColumns", typeid(std::vector<std::string>)}
             }},
 
+            {"aggregateColumn", {
+                {"columnName", typeid(std::string)},
+                {"aggFunc", typeid(std::function<ArrayType(ArrayType, ArrayType)>)},
+                {"initialValue", typeid(ArrayType)}
+            }},
+
+            {"aggregateColumns", {
+                {"columnNames", typeid(std::vector<std::string>)},
+                {"aggFunc", typeid(std::function<ArrayType(ArrayType, ArrayType)>)},
+                {"initialValue", typeid(ArrayType)}
+            }}
+
+        };
+
+        static const std::unordered_map<std::string, std::vector<std::pair<std::string, std::type_index>>> operatorArrayMetadata ={
+            //array
+            {"append", {
+                {"additional_data", typeid(std::optional<ArrayType>)}
+            }},
+
+            {"extend", {
+                {"extraArray", typeid(Array*)}
+            }},
+
+            {"appendNull", {} },
+
+            {"map", {
+                {"mapFunc", typeid(std::function<std::optional<ArrayType>(std::optional<ArrayType>)>)}
+            }},
+            
+            {"filter", {
+                {"filterFunc", typeid(std::function<bool(std::optional<ArrayType>)>)}
+            }},
+
+            {"fillNulls", {
+                {"val", typeid(ArrayType)}
+            } },
+
+            {"isNull", {
+                {"idx", typeid(int)}
+            }},
+
+            {"filteredIndex", {
+                {"filterFunc", typeid(std::function<bool(std::optional<ArrayType>)>)}
+            }},
+
+            {"removeByIndex", {
+                {"indexes", typeid(std::vector<size_t>)}
+            }},
+
+            {"aggregate", {
+                {"aggFunc", typeid(std::function<ArrayType(ArrayType, ArrayType)>)},
+                {"initialValue", typeid(ArrayType)}
+            }}
         };
 
         QueryPlanner() = default;
@@ -161,12 +167,14 @@ class QueryPlanner{
 
         QueryNode addNode(const std::variant<Array*,Table*>& subject
              const std::string& operatorType,
-             const std::vector<ParamsType>& columns = {});
+             int return_type,
+             const std::vector<ParamsType>& params = {});
 
-        std::vector<ParamsType> validateInputsAndGetObjects(const std::string& operatorType, const std::vector<std::any>& params); 
+        std::vector<ParamsType> validateInputsAndGetObjects(const std::string& operatorType, const std::vector<std::any>& params, bool isArray); 
+        void validateNode(QueryNode node, bool isArray);
+        FuncReturnType executeNode(QueryNode node, bool isArray);
 
-        void validatePlan();
-        void executePlan();
+        FuncReturnType executePlan();
 
 }
 
