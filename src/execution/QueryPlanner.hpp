@@ -170,7 +170,7 @@ class QueryPlanner{
              int return_type,
              const std::vector<ParamsType>& params = {});
 
-        std::vector<ParamsType> validateInputsAndGetObjects(const std::string& operatorType, const std::vector<std::any>& params, bool isArray); 
+        std::vector<std::variant<Array*, Table*>> validateInputsAndGetObjects(const std::string& operatorType, const std::vector<std::any>& params, bool isArray); 
         void validateNode(QueryNode node, bool isArray);
         FuncReturnType executeNode(QueryNode node, bool isArray);
 
