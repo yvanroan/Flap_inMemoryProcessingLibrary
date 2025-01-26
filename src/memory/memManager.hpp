@@ -5,8 +5,8 @@
 #include <map>
 #include <memory>
 #include <variant>
-#include "Array.hpp"
-#include "Table.hpp"
+#include "../data/Array.hpp"
+#include "../data/Table.hpp"
 
 using ObjectType = std::variant<Array, Table>;
 
@@ -43,10 +43,9 @@ class memManager{
         size_t getMemSizeById(size_t id);
         size_t totalMemory();
         void updateFrequency(size_t id);
-        void memManager::updateFrequency(size_t id);
         ObjectType getObject(size_t id);
-        bool memManager::isInMemory(size_t id)
-}
+        bool isInMemory(size_t id);
+};
 
 #endif
 

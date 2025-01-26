@@ -1,5 +1,5 @@
 #include "diskSpiller.hpp"
-#include "serializer.hpp"
+#include "Serializer.hpp"
 #include <string>
 #include <fstream>
 
@@ -37,10 +37,10 @@ void DiskSpiller::serializeToFile(const ObjectType& obj, const std::string& file
         using T = std::decay_t<decltype(value)>;
         if constexpr (std::is_same_v<T, Array>) {
             outFile << "Array\n"; 
-            outFile << serializer::arrayToBinary(value); 
+            outFile << Serializer::arrayToBinary(value); 
         } else if constexpr (std::is_same_v<T, Table>) {
             outFile << "Table\n";
-            outFile << serializer::arrayToBinary(value);  
+            outFile << Serializer::arrayToBinary(value);  
         }
     }, obj);
 
@@ -61,9 +61,9 @@ ObjectType DiskSpiller::deserializeFromFile(const std::string& filePath) {
 
     ObjectType obj;
     if (schema == "Array") {
-        obj = serializer::binaryToArray(binaryData);
+        obj = Serializer::binaryToArray(binaryData);
     } else if (schema == "Table") {
-        obj = serializer::binaryToTable(binaryData);
+        obj = Serializer::binaryToTable(binaryData);
     } else {
         throw std::runtime_error("Unknown schema: " + schema);
     }

@@ -5,16 +5,16 @@
 #include <variant>
 #include <vector>
 #include <string>
-#include "Array.hpp"
-#include "Table.hpp"
+#include "../data/Array.hpp"
+#include "../data/Table.hpp"
 
 using ObjectType = std::variant<Array, Table>;
 
-class diskSpiller {
+class DiskSpiller {
 private:
     std::vector<size_t> spilled;
     const size_t spillThreshold= 30; 
-    static diskSpiller instance;
+    static DiskSpiller instance;
     std::unordered_map<size_t, ObjectType> evictedObjects;                        
 
     DiskSpiller() = default;
