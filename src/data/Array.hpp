@@ -15,8 +15,8 @@ public:
     virtual size_t getSize() const{return 0;};
     virtual size_t memoryUsage() const {return 0;};
     virtual std::string typedef_() const {return "null";};
-    virtual bool operator==(Array& arr)=0;
-    virtual bool operator!=(Array& arr)=0;
+    virtual bool operator==(const Array& arr) const =0;
+    virtual bool operator!=(const Array& arr) const =0;
     virtual std::shared_ptr<Array> clone() const = 0;
     // virtual void reportMemoryUsage() const =0;
 };

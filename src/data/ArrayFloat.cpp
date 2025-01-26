@@ -118,24 +118,23 @@ std::string ArrayFloat::typedef_() const {
     return "float";
 }
 
-bool ArrayFloat::operator==(ArrayFloat& arr){
+bool ArrayFloat::operator==(const ArrayFloat& arr) const{
     if(getArray() == arr.getArray()){
         return true;
     }
     return false;
 }
 
-bool ArrayFloat::operator!=(ArrayFloat& arr){
+bool ArrayFloat::operator!=(const ArrayFloat& arr) const{
     return !(*this == arr);
 }
 
 
-bool ArrayFloat::operator==(Array& arr){
+bool ArrayFloat::operator==(const Array& arr) const{
     if(arr.typedef_() != "float"){
         return false;
     }
 
-    ArrayFloat& arrStr = dynamic_cast<ArrayFloat&>(arr);
     const ArrayFloat* arrfloat = dynamic_cast<const ArrayFloat*>(&arr);
     if (!arrfloat) return false;
 
@@ -143,7 +142,7 @@ bool ArrayFloat::operator==(Array& arr){
 
 }
     
-bool ArrayFloat::operator!=(Array& arr){
+bool ArrayFloat::operator!=(const Array& arr) const{
 
     return !(*this == arr);
 }

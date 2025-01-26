@@ -122,18 +122,18 @@ std::vector<int> ArrayInt::getArray() const{
 }
 
 
-bool ArrayInt::operator==(ArrayInt& arr){
+bool ArrayInt::operator==(const ArrayInt& arr) const{
     if(getArray() == arr.getArray()){
         return true;
     }
     return false;
 }
 
-bool ArrayInt::operator!=(ArrayInt& arr){
+bool ArrayInt::operator!=(const ArrayInt& arr) const{
     return !(*this == arr);
 }
 
-bool ArrayInt::operator==(Array& arr){
+bool ArrayInt::operator==(const Array& arr) const{
     if(arr.typedef_() != "int"){
         return false;
     }
@@ -144,14 +144,14 @@ bool ArrayInt::operator==(Array& arr){
 
 }
     
-bool ArrayInt::operator!=(Array& arr){
+bool ArrayInt::operator!=(const Array& arr) const{
     return !(*this == arr);
 }
 
 std::ostream& operator<<(std::ostream& os,  ArrayInt& arr) {
     
     for (const auto& value : arr.getArray()) {
-        os << value << ", ";
+        os << value << ",";
     }
     os << std::endl;
 

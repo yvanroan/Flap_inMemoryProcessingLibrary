@@ -23,10 +23,10 @@ public:
     std::shared_ptr<Array> clone() const override;
 
     float operator[](int idx) const;
-    bool operator==(ArrayFloat& arr);
-    bool operator!=(ArrayFloat& arr);
-    bool operator==(Array& arr) override;
-    bool operator!=(Array& arr) override;
+    bool operator==(const ArrayFloat& arr) const;
+    bool operator!=(const ArrayFloat& arr) const;
+    bool operator==(const Array& arr) const override;
+    bool operator!=(const Array& arr) const override;
 
 
     size_t memoryUsage() const override;

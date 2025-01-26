@@ -19,11 +19,11 @@ Table::Table(Table& t): numColumn{t.getNumColumn()},
     
     for (const auto& [colName, colArray] : t.getTable()) {
         if (auto intCol = std::dynamic_pointer_cast<ArrayInt>(colArray)) {
-            table[colName] = std::make_shared<ArrayInt>(*intCol); // Deep copy ArrayInt
+            table[colName] = std::make_shared<ArrayInt>(*intCol); 
         } else if (auto stringCol = std::dynamic_pointer_cast<ArrayString>(colArray)) {
-            table[colName] = std::make_shared<ArrayString>(*stringCol); // Deep copy ArrayString
+            table[colName] = std::make_shared<ArrayString>(*stringCol); 
         } else if (auto floatCol = std::dynamic_pointer_cast<ArrayFloat>(colArray)) {
-            table[colName] = std::make_shared<ArrayFloat>(*floatCol); // Deep copy ArrayFloat
+            table[colName] = std::make_shared<ArrayFloat>(*floatCol); 
         } else {
             throw std::runtime_error("Unknown column type during deep copy");
         }
@@ -37,8 +37,7 @@ Table::Table(std::unordered_map<std::string, std::shared_ptr<Array>> input){
         numColumn = input.size();
 
         auto it = input.begin();
-        // std::cout << it->second << std::endl;
-        
+
         if (it != input.end() && it->second) {
             numRow = it->second->getSize();
         } else {
@@ -367,7 +366,6 @@ void Table::filterRow(std::function<bool(const float&)> f, std::string columnNam
 
 void Table::filterCol(std::set<std::string> choosen, bool remove){
     int numChoosen = choosen.size();
-    //check for duplicates
     for(auto name: choosen){
         if(table.find(name)!= table.end()){
             numChoosen--;
@@ -388,7 +386,7 @@ void Table::filterCol(std::set<std::string> choosen, bool remove){
     else{
         for (auto it = table.begin(); it != table.end(); ) {
             if (choosen.find(it->first) == choosen.end()) {
-                it = table.erase(it); // Returns the iterator to the next element
+                it = table.erase(it); 
             } else {
                 ++it;
             }
@@ -809,13 +807,6 @@ Table Table::outerJoin(Table left, Table right, std::set<std::string> columns) {
             }
         }
     }
-
-    // for(auto& [name, _]: right_table){
-    //     if(result[name]->getSize()!= left.getNumRow()){
-    //         std::cout <<"\nCur left join:\n" << result<< std::endl;
-    //         throw std::invalid_argument("there was an error with the join operation");
-    //     }
-    // }
 
     return result;
 }

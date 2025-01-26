@@ -24,10 +24,10 @@ public:
     std::shared_ptr<Array> clone() const override;
 
     int operator[](size_t idx) const;
-    bool operator==(ArrayInt& arr);
-    bool operator!=(ArrayInt& arr);
-    bool operator==(Array& arr) override;
-    bool operator!=(Array& arr) override;
+    bool operator==(const ArrayInt& arr) const;
+    bool operator!=(const ArrayInt& arr) const;
+    bool operator==(const Array& arr) const override ; 
+    bool operator!=(const Array& arr) const override ;
     
 
     size_t memoryUsage() const override;

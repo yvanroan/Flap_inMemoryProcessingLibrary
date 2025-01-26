@@ -122,19 +122,19 @@ std::vector<std::string> ArrayString::getArray() const{
     return this->sequence;
 }
 
-bool ArrayString::operator==(ArrayString& arr){
+bool ArrayString::operator==(const ArrayString& arr) const{
     if(getArray() == arr.getArray()){
         return true;
     }
     return false;
 }
 
-bool ArrayString::operator!=(ArrayString& arr){
+bool ArrayString::operator!=(const ArrayString& arr) const{
     return !(*this == arr);
 }
 
 
-bool ArrayString::operator==(Array& arr){
+bool ArrayString::operator==(const Array& arr) const{
     if(arr.typedef_() != "string"){
         return false;
     }
@@ -147,7 +147,7 @@ bool ArrayString::operator==(Array& arr){
 
 }
     
-bool ArrayString::operator!=(Array& arr){
+bool ArrayString::operator!=(const Array& arr) const{
 
     return !(*this == arr);
 }
