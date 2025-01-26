@@ -5,6 +5,7 @@
 #include "data/ArrayInt.hpp"
 #include "data/ArrayString.hpp"
 #include "data/ArrayFloat.hpp"
+#include "data/Serializer.cpp"
 #include <limits>
 
 // TODO: 1. use all methods in the class except joins, focus on single table interactions
@@ -352,6 +353,30 @@ int main () {
         printf("Outer join isn't working");
         std::cout <<"t5\n" << t5 << std::endl;
         std::cout <<"expected_t5\n" << expected_t5 << std::endl;
+        return 0;
+    }
+
+    std::string t = Serializer::tableToCsv(t1);
+
+    Table t7 = Serializer::csvToTable(t);
+    // std::cout << t7<< "\n" ;
+
+
+    if(t7 !=  t1 ){
+        printf("jsonToTable didn't work for t1");
+        std::cout << t7<<std::endl;
+        std::cout << t1 <<std::endl;
+        return 0;
+    }
+
+    std::string q = Serializer::tableToJson(t1);
+
+    Table t8 = Serializer::jsonToTable(q);
+
+    if(t8 !=  t1){
+        printf("jsonToArray didn't work for t1");
+        std::cout << t7<<std::endl;
+        std::cout << t1 <<std::endl;
         return 0;
     }
 

@@ -7,6 +7,7 @@
 #include "data/ArrayInt.hpp"
 #include "data/ArrayString.hpp"
 #include "data/ArrayFloat.hpp"
+#include "data/Serializer.cpp"
 
 int main () {
 
@@ -173,8 +174,7 @@ int main () {
         }
     }
 
-    std::shared_ptr<Array> arr = std::make_shared<ArrayInt>(*arr1);
-    std::shared_ptr<ArrayInt> arr3 = std::dynamic_pointer_cast<ArrayInt>(arr);
+    std::shared_ptr<ArrayInt> arr3 = std::make_shared<ArrayInt>(*arr1);
     
 
     std::function<int(int, int)> aggFunc = [](int a, int b){ return a+b; };
@@ -233,5 +233,29 @@ int main () {
         return 0;
     }
 
+    std::string t = Serializer::arrayToCsv(std::dynamic_pointer_cast<Array>(arr3));
+
+
+    std::shared_ptr<Array> arr5 = Serializer::csvToArray(t);
+    // std::cout << arr5;
+
+    if(*arr3 !=  *arr5){
+        printf("csvToArray didn't work for arr3\n");
+        std::cout << *(std::dynamic_pointer_cast<ArrayInt>(arr5))<< std::endl;
+        std::cout << *arr3<< std::endl;
+        return 0;
+    }
+    
+
+    std::string s = Serializer::arrayToJson(std::dynamic_pointer_cast<Array>(arr3));
+
+
+    std::shared_ptr<Array> arr6 = Serializer::jsonToArray(s);
+
+    if(*arr6 !=  *arr3){
+        printf("jsonToArray didn't work for arr6");
+        std::cout << *(std::dynamic_pointer_cast<ArrayInt>(arr6));
+        return 0;
+    }
 
 }
