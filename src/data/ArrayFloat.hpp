@@ -32,8 +32,8 @@ public:
     size_t memoryUsage() const override;
     std::string typedef_() const override; 
 
-    void removeByIndex(const std::vector<size_t> indexes);
-    void removeByIndex(int index);
+    void removeByIndex(const std::vector<size_t> indexes) override;
+    void removeByIndex(int index) override;
     
     std::vector<size_t> filteredIndex(std::function<bool(const float&)> f);
     void map(std::function<void(float&)> f);

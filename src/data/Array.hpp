@@ -18,6 +18,8 @@ public:
     virtual bool operator==(const Array& arr) const =0;
     virtual bool operator!=(const Array& arr) const =0;
     virtual std::shared_ptr<Array> clone() const = 0;
+    virtual void removeByIndex(const std::vector<size_t> indexes) =0;
+    virtual void removeByIndex(int index) =0;
     // virtual void reportMemoryUsage() const =0;
 };
 
