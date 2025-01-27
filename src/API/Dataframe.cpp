@@ -3,192 +3,102 @@
 #include "Dataframe.hpp"
 
 
-Dataframe(){
+Dataframe::Dataframe(){
     table = std::make_shared<Table>();
 }
 
 
-Dataframe(Dataframe t){
+Dataframe::Dataframe(Dataframe& t){
     table = t.getTable();
 }
 
+Dataframe::Dataframe(Table t){
+    table = std::make_shared<Table>(t);
+}
+
 void Dataframe::appendCol(std::string name, Series input){
-    QueryPlanner::getInstance().addNode(
-        table,
-        "appendCol",
-        0,
-        {name, input}
-    );
+   table->appendCol(name, input.getArray());
 }
-void Dataframe::appendRow(std::vector<SeriesType> entry){
-    std::vector<std::optional<SeriesType>> opt_entry;
 
-    std::transform(
-        input.begin(), 
-        input.end(), 
-        std::back_inserter(opt_entry),
-        [](int value) { return std::optional<int>(value); }
-    );
-
-    QueryPlanner::getInstance().addNode(
-        table,
-        "appendRow",
-        0,
-        {opt_entry}
-    );
-}
 void Dataframe::rename(std::string oldName, std::string newName){
 
-    QueryPlanner::getInstance().addNode(
-        table,
-        "rename",
-        0,
-        {oldName, newName}
-    );
+    table->rename(oldName, newName);
 }
 
 Series Dataframe::column(std::string name){
-    QueryPlanner::getInstance().addNode(
-        table,
-        "column",
-        4,
-        {name}
-    );
-}
-std::vector<SeriesType> Dataframe::row(size_t idx){ //similar to iloc in pandas
-    QueryPlanner::getInstance().addNode(
-        table,
-        "row",
-        5,
-        {idx}
-    );
-}
-std::vector<std::vector<SeriesType>> Dataframe::rows(std::vector<size_t> indexes){
-    QueryPlanner::getInstance().addNode(
-        table,
-        "rows_vector",
-        3,
-        {indexes}
-    );
-}
-std::vector<std::vector<SeriesType>> Dataframe::rows(size_t start_idx, size_t end_idx){
-    
-    QueryPlanner::getInstance().addNode(
-        table,
-        "rows_idx",
-        3,
-        {start_idx, end_idx}
-    );
-
+   return Series((*table)[name]);
 }
 
 void Dataframe::removeCol(std::string colName){
-    QueryPlanner::getInstance().addNode(
-        table,
-        "removeCol",
-        0,
-        {colName}
-    );
+    table->removeCol(colName);
 }
 void Dataframe::removeRows(std::vector<size_t> rowNumbers){
-
-    QueryPlanner::getInstance().addNode(
-        table,
-        "removeRows",
-        0,
-        {rowNumbers}
-    );
+    table->removeRows(rowNumbers);
 }
 
-template <typename Func> 
-void Dataframe::filterRow(Func f, std::string columnName){
-    
-    QueryPlanner::getInstance().addNode(
-        table,
-        "filterRow",
-        0,
-        {f, columnName}
-    );
+void Dataframe::filterRow(std::function<bool(const int&)> f, std::string columnName){
+    table->filterRow(f, columnName);
 }
-void Dataframe::filterCol(std::vector<std::string> choosen, bool remove){
-    
-    QueryPlanner::getInstance().addNode(
-        table,
-        "filterCol",
-        0,
-        {choosen, remove}
-    );
-
+void Dataframe::filterRow(std::function<bool(const std::string&)> f, std::string columnName){
+    table->filterRow(f, columnName);
 }
-template <typename Func> 
-void Dataframe::map(Func f, std::string name){
-    
-    QueryPlanner::getInstance().addNode(
-        table,
-        "map",
-        0,
-        {f, name}
-    );
-
+void Dataframe::filterRow(std::function<bool(const float&)> f, std::string columnName){
+    table->filterRow(f, columnName);
+}
+void Dataframe::filterCol(std::set<std::string> choosen, bool remove= false){
+    table->filterCol(choosen, remove);
 }
 
-Dataframe Dataframe::innerJoin( Dataframe right, std::vector<std::string> columns) const{
-    
-    QueryPlanner::getInstance().addNode(
-        table,
-        "innerJoin",
-        2,
-        {right, columns}
-    );
-    
+void Dataframe::map(std::function<void(int&)> f, std::string name){
+    table->map(f,name);
 }
-Dataframe Dataframe::outerJoin( Dataframe right, std::vector<std::string> columns ) const{
-    
-    QueryPlanner::getInstance().addNode(
-        table,
-        "outerJoin",
-        2,
-        {right, columns}
-    );
-
+void Dataframe::map(std::function<void(std::string&)> f, std::string name){
+    table->map(f,name);
+}
+void Dataframe::map(std::function<void(float&)> f, std::string name){
+    table->map(f,name);
 }
 
-Dataframe Dataframe::leftJoin( Dataframe right, std::vector<std::string> columns) const{
-    QueryPlanner::getInstance().addNode(
-        table,
-        "leftJoin",
-        2,
-        {right, columns}
-    );
-}
-Dataframe Dataframe::rightJoin( Dataframe right, std::vector<std::string> columns)const{
 
-    QueryPlanner::getInstance().addNode(
-        table,
-        "rightJoin",
-        2,
-        {right, columns}
-    );
+int Dataframe::aggregateColumn( std::string& columnName, std::function<int(int, int)> aggFunc, int initialValue){
+    return table->aggregateColumn(columnName, aggFunc, initialValue);
+}
+std::string Dataframe::aggregateColumn( std::string& columnName, std::function<std::string(std::string, std::string)> aggFunc, std::string initialValue){
+    return table->aggregateColumn(columnName, aggFunc, initialValue);
+}
+float Dataframe::aggregateColumn( std::string& columnName, std::function<float(float, float)> aggFunc, float initialValue){
+    return table->aggregateColumn(columnName, aggFunc, initialValue);
 }
 
-template <typename Func> 
-SeriesType Dataframe::aggregateColumn(const std::string& columnName, Func aggFunc, SeriesType initialValue) const{
-    QueryPlanner::getInstance().addNode(
-        table,
-        "aggregateColumn",
-        1,
-        {columnName, aggFunc, initialValue}
-    );
+Table Dataframe::aggregateColumn( std::vector<std::string>& columnNames, std::function<int(int, int)> aggFunc, int initialValue){
+    return table->aggregateColumn(columnNames, aggFunc, initialValue);
+}
+Table Dataframe::aggregateColumn( std::vector<std::string>& columnNames, std::function<std::string(std::string, std::string)> aggFunc, std::string initialValue){
+    return table->aggregateColumn(columnNames, aggFunc, initialValue);
+}
+Table Dataframe::aggregateColumn( std::vector<std::string>& columnNames, std::function<float(float, float)> aggFunc, float initialValue){
+    return table->aggregateColumn(columnNames, aggFunc, initialValue);
 }
 
-template <typename Func> 
-Dataframe Dataframe::aggregateColumns(const std::vector<std::string>& columnNames, Func aggFunc, SeriesType initialValue) const {
-    QueryPlanner::getInstance().addNode(
-        table,
-        "aggregateColumns",
-        2,
-        {columnNames, aggFunc, initialValue}
-    );
+bool Dataframe::operator==(Dataframe& d){
+    return table == d.getTable();
+}
+bool Dataframe::operator!=(Dataframe& d){
+    return !(table == d.getTable());
+}
+
+Dataframe Dataframe::innerJoin(Dataframe left, Dataframe right, std::set<std::string> columns){
+
+    return Dataframe(Table::innerJoin(*(left.getTable()), *(right.getTable()), columns));
+}
+Dataframe Dataframe::outerJoin(Dataframe left, Dataframe right, std::set<std::string> columns){
+    return Dataframe(Table::outerJoin(*(left.getTable()), *(right.getTable()), columns));
+}
+Dataframe Dataframe::leftJoin(Dataframe left, Dataframe right, std::set<std::string> columns){
+    return Dataframe(Table::leftJoin(*(left.getTable()), *(right.getTable()), columns));
+}
+Dataframe Dataframe::rightJoin(Dataframe left, Dataframe right, std::set<std::string> columns){
+    return Dataframe(Table::rightJoin(*(left.getTable()), *(right.getTable()), columns));
 }
 
 std::shared_ptr<Table> Dataframe::getTable(){
@@ -203,19 +113,21 @@ size_t Dataframe::getNumRow(){
 }
 
 Series& Dataframe::operator[](const std::string& columnName) {
-    return Series((*table)[columnName]);
+    Series tmp = Series((*table)[columnName]);
+    Series& tm = tmp;
+    return tm;
 }
 
 
-std::any collect() {
-    FuncReturnType result = executePlan();
-    switch (queryPlan.back().resultType) { // Dispatch based on last operation
-        case Type::ROW_VECTOR: return std::get<std::vector<std::optional<SeriesType>>>(result);
-        case Type::MATRIX: return std::get<std::vector<std::vector<std::optional<SeriesType>>>>(result);
-        case Type::ARRAY: return std::get<Array*>(result);
-        case Type::TABLE: return std::get<Table*>(result);
-        case Type::SCALAR: return std::get<SeriesType>(result);
-        case Type::VOID: return table = std::get<Table*>(result);
-        default: throw std::runtime_error("Unsupported result type.");
-    }
-}
+// std::any collect() {
+//     FuncReturnType result = executePlan();
+//     switch (queryPlan.back().resultType) { // Dispatch based on last operation
+//         case Type::ROW_VECTOR: return std::get<std::vector<std::optional<SeriesType>>>(result);
+//         case Type::MATRIX: return std::get<std::vector<std::vector<std::optional<SeriesType>>>>(result);
+//         case Type::ARRAY: return std::get<Array*>(result);
+//         case Type::TABLE: return std::get<Table*>(result);
+//         case Type::SCALAR: return std::get<SeriesType>(result);
+//         case Type::VOID: return table = std::get<Table*>(result);
+//         default: throw std::runtime_error("Unsupported result type.");
+//     }
+// }

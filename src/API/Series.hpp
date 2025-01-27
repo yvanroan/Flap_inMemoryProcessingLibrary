@@ -1,57 +1,55 @@
+#pragma once
 
-
-#ifndef Series_HPP
-#define Series_HPP
 #include <vector>
 #include <string>
 #include <variant>
 #include <memory>
+#include <any>
 #include "Array.hpp"
-
-using SeriesType = std::variant<size_t, int, float, double, std::string, bool>;
-using FuncReturnType = std::variant<std::vector<std::optional<SeriesType>>, std::vector<std::vector<std::optional<SeriesType>>>, Array*, Table* ,std::vector<size_t>, SeriesType, std::optional<SeriesType>>;
 
 class Series{
 
     private: 
         std::shared_ptr<Array> arr;
 
-        enum Type {VOID, SCALAR, VECTOR_SIZE};
 
     protected:
-        std::shared_ptr<Array> getArray();
 
     public:
         Series();
-        Series(Array arr);
-        Series(std::vector<SeriesType> input);
-        Series(SeriesType data);
-        void append(SeriesType data);
-        void extend(const Series& col);
-        
-        void appendNull();
-
-        template <typename Func> 
-        void map(Func f);
-
-        template <typename Func> 
-        void filter(Func f);
+        Series(Series& s);
+        Series(std::shared_ptr<Array> array);
+        Series(std::vector<int> input);
+        Series(std::vector<std::string> input);
+        Series(std::vector<float> input);
+        void append(int data);
+        void append(std::string data);
+        void append(float data);
+        void extend( Series& col);
 
         size_t size();
-        SeriesType operator[](int idx) const;
-        void fillNulls(SeriesType val);
-        bool isNull(int idx) const;
+        std::string typedef_() const; 
 
-        template <typename Func> 
-        std::vector<size_t> filteredIndex(Func f);
+        std::vector<size_t> filteredIndex(std::function<bool(const int&)> f);
+        void map(std::function<void(int&)> f);
+        void filter(std::function<bool(const int&)> f); 
+        int aggregate(std::function<int(int, int)> aggFunc, int initial) const;
 
-        void removeByIndex(const std::vector<size_t> indexes);
-
-        template <typename Func> 
-        SeriesType aggregate(Func aggFunc, SeriesType initialValue) const;
-
-        std::any collect();
+        std::vector<size_t> filteredIndex(std::function<bool(const float&)> f);
+        void map(std::function<void(float&)> f);
+        void filter(std::function<bool(const float&)> f); 
+        float aggregate(std::function<float(float, float)> aggFunc, float initial) const;
         
-}
+        std::vector<size_t> filteredIndex(std::function<bool(const std::string&)> f);
+        void map(std::function<void(std::string&)> f);
+        void filter(std::function<bool(const std::string&)> f); 
+        std::string aggregate(std::function<std::string(std::string, std::string)> aggFunc, std::string initial) const;
+        
+        void removeByIndex(const std::vector<size_t> indexes);
+        void removeByIndex(int index);
 
-#endif
+
+        std::shared_ptr<Array> getArray();
+        // std::any collect();
+        
+};
