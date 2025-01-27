@@ -1,52 +1,49 @@
-#ifndef MEM_HPP
-#define MEM_HPP
+#pragma once
 
 #include <unordered_map>
 #include <map>
 #include <memory>
 #include <variant>
+#include "diskSpiller.hpp"
 #include "../data/Array.hpp"
 #include "../data/Table.hpp"
 
-using ObjectType = std::variant<Array, Table>;
 
 class memManager{
 
     private:
-        std::unordered_map<size_t, size_t> memTracker;
+    std::unordered_map<size_t, size_t> memTracker; // Track memory usage by ID
+    std::unordered_map<size_t, int> accessFrequency; // Track access frequency
+    std::unordered_map<size_t, std::shared_ptr<Array>> arrayMap; // Manage Array objects
+    std::unordered_map<size_t, std::shared_ptr<Table>> tableMap; // Manage Table objects
+    std::multimap<int, size_t> frequencyMap; // Map for LFU eviction
 
-        std::unordered_map<size_t, int> accessFrequency;
+    size_t currentMemory = 0; 
+    const size_t memoryThreshold = 1024 * 1024 * 20; // 20MB limit
+    static memManager instance; // Singleton instance
+    size_t cur_id=0; // Unique identifier for objects
 
-        std::unordered_map<size_t, std::shared_ptr<ObjectType>> objectMap;
+    DiskSpiller& spiller;  // Reference to the DiskSpiller instance
 
-        std::multimap<int, size_t> frequencyMap;
+    memManager() : spiller(DiskSpiller::getInstance()) {}
 
-        size_t currentMemory = 0;
+    void evictLFU(); // Handle least-frequently-used eviction
 
-        const size_t memoryThreshold = 1024 * 1024 * 20;  //20MB
+public:
+    static memManager& getInstance(); 
 
-        static memManager instance;
+    size_t registerInstance(const std::shared_ptr<Array>& array, size_t size);
+    size_t registerInstance(const std::shared_ptr<Table>& table, size_t size);
 
-        static size_t cur_id;
+    void updateInstance(size_t id, size_t newSize);
+    void removeInstance(size_t id);
 
-        memManager() = default;
+    size_t getMemSizeById(size_t id);
+    size_t totalMemory();
+    void updateFrequency(size_t id);
 
-        void evictLFU();
-
-    public:
-
-        static memManager& getInstance();
-        size_t registerInstance(size_t size);
-        void updateInstance(size_t id, size_t newsize );
-        void removeInstance(size_t id);
-        //might remove this
-        size_t getMemSizeById(size_t id);
-        size_t totalMemory();
-        void updateFrequency(size_t id);
-        ObjectType getObject(size_t id);
-        bool isInMemory(size_t id);
+    bool isInMemory(size_t id);
 };
 
-#endif
 
 

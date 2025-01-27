@@ -1,94 +1,139 @@
 #include "diskSpiller.hpp"
-#include "Serializer.hpp"
+#include "Serializer.cpp"
 #include <string>
 #include <fstream>
 
 
 DiskSpiller DiskSpiller::instance;
 
-static DiskSpiller& getInstance() {
+DiskSpiller& DiskSpiller::getInstance() {
     return instance;
 }
 
-std::string DiskSpiller::generateFilePath(size_t id) const {
-    return "spill_" + std::to_string(id) + ".bin";
+std::string DiskSpiller::generateFilePath(size_t id, bool isArray) const {
+    std::string ans = "spill_";
+
+    if(isArray){
+        ans += "array";
+    }else{
+        ans += "table";
+    }
+
+    ans += std::to_string(id) + ".bin";
+    return ans;
 }
 
-void DiskSpiller::collect(size_t id, ObjectType obj) {
-    evictedObjects[id] = std::move(obj);
+void DiskSpiller::collect(size_t id, std::shared_ptr<Array> obj) {
 
-    if (evictedObjects.size() >= spillThreshold) {
-        for (const auto& [key, obj]: evictedObjects) {
-            std::string filePath = generateFilePath(key);
-            serializeToFile(batch[i], filePath);
-            spilled.emplace_back(key);
+    evictedArrays[id] = std::move(obj);
+
+    if (evictedArrays.size() >= spillThreshold) {
+        for (const auto& [key, obj]: evictedArrays) {
+            std::string filePath = generateFilePath(key, true);
+            serializeToFile(obj, filePath);
+            spilledArrays.emplace_back(key);
         }
-        evictedObjects.clear();
+        evictedArrays.clear();
     }
 }
 
-void DiskSpiller::serializeToFile(const ObjectType& obj, const std::string& filePath) {
-    std::ofstream outFile(filePath, std::ios::binary);
-    if (!outFile.is_open()) {
+void DiskSpiller::collect(size_t id, std::shared_ptr<Table>  obj) {
+    evictedTables[id] = std::move(obj);
+
+    if (evictedTables.size() >= spillThreshold) {
+        for (const auto& [key, obj]: evictedTables) {
+            std::string filePath = generateFilePath(key, false);
+            serializeToFile(obj, filePath);
+            spilledTables.emplace_back(key);
+        }
+        evictedTables.clear();
+    }
+}
+
+void DiskSpiller::serializeToFile(const std::shared_ptr<Array> obj, const std::string& filePath) {
+    std::ofstream outFile(filePath);
+    if (!outFile) {
         throw std::runtime_error("Failed to open file for writing: " + filePath);
     }
 
-    std::visit([&outFile](auto&& value) {
-        using T = std::decay_t<decltype(value)>;
-        if constexpr (std::is_same_v<T, Array>) {
-            outFile << "Array\n"; 
-            outFile << Serializer::arrayToBinary(value); 
-        } else if constexpr (std::is_same_v<T, Table>) {
-            outFile << "Table\n";
-            outFile << Serializer::arrayToBinary(value);  
-        }
-    }, obj);
-
+    std::string csv = Serializer::arrayToCsv(obj);
+    outFile << csv;
     outFile.close();
 }
 
-ObjectType DiskSpiller::deserializeFromFile(const std::string& filePath) {
-    std::ifstream inFile(filePath, std::ios::binary);
-    if (!inFile.is_open()) {
+void DiskSpiller::serializeToFile(std::shared_ptr<Table> obj, const std::string& filePath) {
+    std::ofstream outFile(filePath);
+    if (!outFile) {
+        throw std::runtime_error("Failed to open file for writing: " + filePath);
+    }
+
+    std::string csv = Serializer::tableToCsv(*obj);
+    outFile << csv;
+    outFile.close();
+}
+
+std::shared_ptr<Array> DiskSpiller::deserializeArrayFromFile(const std::string& filePath) {
+    std::ifstream inFile(filePath);
+    if (!inFile) {
         throw std::runtime_error("Failed to open file for reading: " + filePath);
     }
-    std::string schema;
-    std::getline(inFile, schema);
-    std::string binaryData((std::istreambuf_iterator<char>(inFile)),
-                            std::istreambuf_iterator<char>());
 
-    inFile.close();
+    std::ostringstream buffer;
+    buffer << inFile.rdbuf();
 
-    ObjectType obj;
-    if (schema == "Array") {
-        obj = Serializer::binaryToArray(binaryData);
-    } else if (schema == "Table") {
-        obj = Serializer::binaryToTable(binaryData);
-    } else {
-        throw std::runtime_error("Unknown schema: " + schema);
-    }
-
-    return obj;
+    return Serializer::csvToArray(buffer.str());
 }
 
-ObjectType DiskSpiller::load(size_t id) {
+std::shared_ptr<Table> DiskSpiller::deserializeTableFromFile(const std::string& filePath) {
+    std::ifstream inFile(filePath);
+    if (!inFile) {
+        throw std::runtime_error("Failed to open file for reading: " + filePath);
+    }
+
+    std::ostringstream buffer;
+    buffer << inFile.rdbuf();
+
+    return std::make_shared<Table>(Serializer::csvToTable(buffer.str()));
+}
+
+
+std::shared_ptr<Table> DiskSpiller::loadTable(size_t id) {
     
 
-    if (evictedObjects.find(id) != evictedObjects.end()) {
-        return evictedObjects[id];
-    } else {
-        std::string filePath = generateFilePath(id);
-        ObjectType obj = deserializeFromFile(filePath);
-        return obj;
-    }
+    if (evictedTables.find(id) != evictedTables.end()) {
+        return evictedTables[id];
+    } 
+
+    std::string filePath = generateFilePath(id, false);
+    return deserializeTableFromFile(filePath);
 }
 
-void DiskSpiller::cleanup() {
-    for (const auto& id : spilled) {
-        std::string filepath = generateFilePath(id);
-        if (std::remove(filePath.c_str()) != 0) {
-            std::cerr << "Failed to delete file: " + filePath << std::endl;
+std::shared_ptr<Array> DiskSpiller::loadArray(size_t id) {
+
+    if (evictedArrays.find(id) != evictedArrays.end()) {
+        return evictedArrays[id];
+    } 
+    
+    std::string filePath = generateFilePath(id, false);
+    return deserializeArrayFromFile(filePath);
+}
+
+void DiskSpiller::cleanupTable() {
+    for (const auto& id : spilledTables) {
+        std::string filepath = generateFilePath(id, false);
+        if (std::remove(filepath.c_str()) != 0) {
+            std::cerr << "Failed to delete file: " + filepath << std::endl;
         }
     }
-    spilled.clear();
+    spilledTables.clear();
+}
+
+void DiskSpiller::cleanupArray() {
+    for (const auto& id : spilledArrays) {
+        std::string filepath = generateFilePath(id, false);
+        if (std::remove(filepath.c_str()) != 0) {
+            std::cerr << "Failed to delete file: " + filepath << std::endl;
+        }
+    }
+    spilledArrays.clear();
 }

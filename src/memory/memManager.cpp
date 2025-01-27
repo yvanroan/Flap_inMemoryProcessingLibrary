@@ -3,53 +3,67 @@
 #include <map>
 #include <stdexcept>
 #include "memManager.hpp"
-#include "diskSpiller.hpp"
+#include "../data/ArrayInt.hpp"
+// #include "diskSpiller.hpp"
 
 memManager memManager::instance;
-size_t memManager::cur_id=0;
 
-static memManager& memManager::getInstance(){
+memManager& memManager::getInstance(){
     return instance;
 }
 
-size_t memManager::registerInstance(size_t size){
+size_t memManager::registerInstance(const std::shared_ptr<Array>& array, size_t size){
 
-    size_t id = ++cur_id; 
-    memTracker[id] = size;
-
-    accessFrequency[id] = 1;
-    frequencyMap.emplace(1, id);
-    currentMemory += size;
-
-    // mem check
-    if (currentMemory > memoryThreshold) {
+    if (currentMemory + size > memoryThreshold) {
         evictLFU();
     }
+
+    size_t id = ++cur_id;
+    arrayMap[id] = array;
+    memTracker[id] = size;
+    accessFrequency[id] = 1;
+    frequencyMap.insert({1, id});
+    currentMemory += size;
 
     return id;
 }
 
-void memManager::updateInstance(size_t id, size_t newsize ){
-    if (memTracker.find(id) == memTracker.end()) {
-        throw std::invalid_argument("Instance ID not found.");
-        
-    }
+size_t memManager::registerInstance(const std::shared_ptr<Table>& table, size_t size){
 
-    currentMemory -= memTracker[id];
-    currentMemory += newsize;
-
-    memTracker[id] = newsize;
-
-    // mem check
-    if (currentMemory > memoryThreshold) {
+    if (currentMemory + size > memoryThreshold) {
         evictLFU();
     }
+
+    size_t id = ++cur_id;
+    tableMap[id] = table;
+    memTracker[id] = size;
+    accessFrequency[id] = 1;
+    frequencyMap.insert({1, id});
+    currentMemory += size;
+
+    return id;
+}
+
+
+void memManager::updateInstance(size_t id, size_t newsize ){
+    if (!isInMemory(id)) {
+        throw std::invalid_argument("Instance ID not found in Memory Manager.");
+        
+    }
+    if (currentMemory - memTracker[id] + newsize > memoryThreshold) {
+        evictLFU();
+    }
+ 
+    currentMemory += newsize - memTracker[id];
+
+    memTracker[id] = newsize;
+    
 }
 
 void memManager::removeInstance(size_t id){
 
-    if (memTracker.find(id) == memTracker.end()) {
-        throw std::invalid_argument("Instance ID not found.");
+    if (!isInMemory(id)) {
+        throw std::invalid_argument("Instance ID not found in Memory Manager.");
     }
 
     size_t size = memTracker[id];
@@ -58,8 +72,8 @@ void memManager::removeInstance(size_t id){
     int frequency = accessFrequency[id];
     accessFrequency.erase(id);
 
-    objectMap.erase(id);
-
+    std::shared_ptr<Array> arr = std::make_shared<ArrayInt>();
+    std::shared_ptr<Table> tab = std::make_shared<Table>();
 
     auto range = frequencyMap.equal_range(frequency);
     for (auto it = range.first; it != range.second; ++it) {
@@ -70,11 +84,24 @@ void memManager::removeInstance(size_t id){
     }
 
     currentMemory -= size;
+
+    if (arrayMap.find(id) != arrayMap.end()) {
+        arr = arrayMap[id];
+        arrayMap.erase(id);
+        spiller.collect(id, arr);
+
+    }else{
+        tab = tableMap[id];
+        tableMap.erase(id);
+        spiller.collect(id, tab);
+    }
+
 }
 
 //still thinking if i am gonna need this
-size_t getMemSizeById(size_t id) const{
-    if (memTracker.find(id) == memTracker.end()) {
+size_t memManager::getMemSizeById(size_t id){
+
+    if (!isInMemory(id)) {
         throw std::invalid_argument("Instance ID not found.");
     }
 
@@ -93,11 +120,7 @@ void memManager::evictLFU() {
 
         auto it = frequencyMap.begin();
         size_t id = it->second;
-        ObjectType obj = getObject(id);
-
         removeInstance(id);
-
-        diskSpiller::getInstance().collect(id, obj);
     }
 }
 
@@ -116,18 +139,6 @@ void memManager::updateFrequency(size_t id) {
 
 }
 
-ObjectType memManager::getObject(size_t id) {
-    auto it = objectMap.find(id);
-    
-    if (it == objectMap.end()) {
-        throw std::runtime_error("Object not found");
-    }
-
-    ObjectType result = *(it->second); 
-
-    return result;
-}
-
 bool memManager::isInMemory(size_t id){
-    return !(memTracker.find(id)==memTracker.end())
+    return !(memTracker.find(id)==memTracker.end());
 }

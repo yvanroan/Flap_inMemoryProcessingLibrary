@@ -1,5 +1,4 @@
-#ifndef DISK_SPILLER_HPP
-#define DISK_SPILLER_HPP
+#pragma once
 
 #include <unordered_map>
 #include <variant>
@@ -8,31 +7,37 @@
 #include "../data/Array.hpp"
 #include "../data/Table.hpp"
 
-using ObjectType = std::variant<Array, Table>;
-
 class DiskSpiller {
 private:
-    std::vector<size_t> spilled;
+    std::vector<size_t> spilledTables;
+    std::vector<size_t> spilledArrays;
     const size_t spillThreshold= 30; 
     static DiskSpiller instance;
-    std::unordered_map<size_t, ObjectType> evictedObjects;                        
+    std::unordered_map<size_t, std::shared_ptr<Table>> evictedTables;    
+    std::unordered_map<size_t, std::shared_ptr<Array>> evictedArrays;                    
 
     DiskSpiller() = default;
 
-    std::string generateFilePath(size_t id) const;
+    std::string generateFilePath(size_t id, bool isArray) const;
     
-    void serializeToFile(const ObjectType& obj, const std::string& filePath);
+    void serializeToFile( std::shared_ptr<Table> obj, const std::string& filePath);
+    void serializeToFile(const std::shared_ptr<Array> obj, const std::string& filePath);
 
-    ObjectType deserializeFromFile(const std::string& filePath);
+    std::shared_ptr<Array> deserializeArrayFromFile(const std::string& filePath);
+
+    std::shared_ptr<Table> deserializeTableFromFile(const std::string& filePath);
 
 public:
     static DiskSpiller& getInstance();
 
-    void collect(size_t id, ObjectType obj);
+    void collect(size_t id, std::shared_ptr<Table> obj);
 
-    ObjectType load(size_t id);
+    void collect(size_t id, std::shared_ptr<Array> obj);
 
-    void cleanup();
+    std::shared_ptr<Array> loadArray(size_t id);
+
+    std::shared_ptr<Table>  loadTable(size_t id);
+
+    void cleanupTable();
+    void cleanupArray();
 };
-
-#endif
